@@ -1,0 +1,20 @@
+[project]
+name = "state-machine-vizualizator"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "L140-beep",email = "kartoshka0302@mail.ru"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic (>=2.11.7,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "state_machine_visualizer", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

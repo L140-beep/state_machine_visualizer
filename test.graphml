@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <data key="gFormat">Cyberiada-GraphML-1.0</data>
+  <key attr.name="name" attr.type="string" for="node" id="dName"></key>
+  <key attr.name="data" attr.type="string" for="node" id="dData"></key>
+  <key attr.name="data" attr.type="string" for="edge" id="dData"></key>
+  <key attr.name="initial" attr.type="string" for="node" id="dInitial"></key>
+  <key for="edge" id="dGeometry"></key>
+  <key for="node" id="dGeometry"></key>
+  <key for="edge" id="dColor"></key>
+  <key for="node" id="dNote"></key>
+  <key for="node" id="dColor"></key>
+  <graph id="Machine1">
+    <data key="dStateMachine"></data>
+    <data key="dGeometry">
+      <rect x="0" y="0" width="450" height="100"></rect>
+    </data>
+    <node id="coreMeta">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_META</data>
+      <data key="dData">platform/ junior-gardener
+
+standardVersion/ 1.0
+
+platformVersion/ 1.0
+
+lapkiVisual/ true
+
+</data>
+    </node>
+    <node id="sbjucpslxyamojsiiqov">
+      <data key="dName">Вычисляем высоту</data>
+      <data key="dData">entry/
+Counter1.set(1)
+Mover1.turn_left()
+Mover1.turn_left()
+Sensor1.search_walls()
+
+Sensor1.got_walls[else]/
+Mover1.move_forward()
+Counter1.add(1)
+Sensor1.search_walls()
+
+</data>
+      <data key="dGeometry">
+        <rect x="1919.2" y="-219.60000000000014" width="450" height="100"></rect>
+      </data>
+    </node>
+    <node id="ibijcocezttgvetmnfuf">
+      <data key="dName">Рисуем А</data>
+      <data key="dData">UserSignal2.isCalled/
+Mover1.turn_left()
+Mover1.move_forward()
+Mover1.turn_left()
+Mover1.move_forward()
+
+UserSignal3.isCalled/
+Mover1.turn_left()
+Mover1.move_forward()
+
+entry/
+Mover1.turn_left()
+Mover1.move_forward()
+Mover1.turn_left()
+Mover1.move_forward()
+Mover1.turn_right()
+
+</data>
+      <data key="dGeometry">
+        <rect x="796.3000000000002" y="-280.4000000000001" width="450" height="100"></rect>
+      </data>
+      <data key="dColor">#FFFFFF</data>
+      <graph id="ibijcocezttgvetmnfuf">
+        <node id="yowabnqzxjnoncespzon">
+          <data key="dName">Рисуем левую вертикальную линию</data>
+          <data key="dData">entry/
+UserSignal1.call()
+Flower1.plant(3)
+Mover1.turn_right()
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+Flower1.plant(3)
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="534.9000000000001" y="905.9999999999992" width="450" height="100"></rect>
+          </data>
+          <data key="dColor">#FFFFFF</data>
+        </node>
+        <node id="wncdwpawtcnbqcjlwqoi">
+          <data key="dName">Рисуем верхнюю горизонтальную линию</data>
+          <data key="dData">entry/
+Mover1.turn_right()
+UserSignal1.call()
+Counter3.set(Counter4.value)
+Counter3.sub(2)
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+Flower1.plant(3)
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="569.1" y="413.0999999999999" width="450" height="100"></rect>
+          </data>
+          <data key="dColor">#FFFFFF</data>
+        </node>
+        <node id="spakzotbopxeqfpjwxhp">
+          <data key="dName">Идем к началу левой линии</data>
+          <data key="dData">entry/
+UserSignal3.call()
+UserSignal1.call()
+Counter3.set(Counter1.value)
+Counter3.sub(2)
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="54.90000000000013" y="1403.8" width="450" height="100"></rect>
+          </data>
+        </node>
+        <node id="wojwktzppcvtdwleijzk">
+          <data key="dName">Рисуем центральную линию</data>
+          <data key="dData">entry/
+Mover1.turn_left()
+UserSignal1.call()
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+Flower1.plant(3)
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="55.499999999997634" y="992.1999999999983" width="450" height="100"></rect>
+          </data>
+          <data key="dColor">#FFFFFF</data>
+        </node>
+        <node id="fdhcuhykxiildnxeuxjc">
+          <data key="dName">Рисуем правую вертикальную линию</data>
+          <data key="dData">entry/
+UserSignal1.call()
+Counter5.set(1)
+Counter2.set(Counter1.value)
+Counter2.sub(2)
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+Counter2.sub(1)
+Counter5.add(1)
+Flower1.plant(3)
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="48.199999999998134" y="466.69999999999857" width="450" height="100"></rect>
+          </data>
+        </node>
+        <node id="yqdldevsseneaeezvuli">
+          <data key="dName">Рисуем нижнюю горизонтальную линию</data>
+          <data key="dData">entry/
+UserSignal1.call()
+Counter3.set(Counter4.value)
+Counter3.sub(2)
+Mover1.turn_left()
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+Flower1.plant(3)
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="548.6999999999988" y="1761.6000000000004" width="450" height="100"></rect>
+          </data>
+        </node>
+        <node id="doumffqxndutcmxdehvw">
+          <data key="dName">Идем к началу вертикальной линии</data>
+          <data key="dData">entry/
+Mover1.turn_left()
+Mover1.turn_left()
+UserSignal1.call()
+
+UserSignal1.isCalled[else]/
+Mover1.move_forward()
+UserSignal1.call()
+
+</data>
+          <data key="dGeometry">
+            <rect x="558.9999999999943" y="1301.8999999999994" width="450" height="100"></rect>
+          </data>
+          <data key="dColor">#FFFFFF</data>
+        </node>
+        <node id="nweldmxlpuhedfyjotcq">
+          <data key="dVertex">initial</data>
+          <data key="dGeometry">
+            <rect x="33.00000000000005" y="389.40000000000026" width="-1" height="-1"></rect>
+          </data>
+        </node>
+      </graph>
+    </node>
+    <node id="bhabuvdmjqvjnihtigni">
+      <data key="dName">Вычисляем ширину</data>
+      <data key="dData">entry/
+Mover1.turn_left()
+Counter4.set(1)
+Sensor1.search_walls()
+
+Sensor1.got_walls[else]/
+Mover1.move_forward()
+Counter4.add(1)
+Sensor1.search_walls()
+
+</data>
+      <data key="dGeometry">
+        <rect x="1978.7999999999993" y="203.39999999999856" width="450" height="100"></rect>
+      </data>
+    </node>
+    <node id="gxkelhdiguspwoqsyvsv">
+      <data key="dVertex">initial</data>
+      <data key="dGeometry">
+        <rect x="1881.3000000000004" y="-271.20000000000005" width="-1" height="-1"></rect>
+      </data>
+    </node>
+    <node id="kslygzkeaybmblhomfwz">
+      <data key="dVertex">final</data>
+      <data key="dGeometry">
+        <point x="1872.8999999999978" y="607.1999999999978"></point>
+      </data>
+    </node>
+    <node id="cMover1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Mover1
+
+type/ Mover
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cFlower1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Flower1
+
+type/ Flower
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cSensor1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Sensor1
+
+type/ Sensor
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCounter1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Counter1
+
+type/ Counter
+
+name/ Высота
+
+label/ ВЫС
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cUserSignal1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ UserSignal1
+
+type/ UserSignal
+
+label/ ДВЖ
+
+name/ ДвижениеЗавершено
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cUserSignal2">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ UserSignal2
+
+type/ UserSignal
+
+label/ ПОВ
+
+name/ НеобходимПоворотЗмей
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCompass1">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Compass1
+
+type/ Compass
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCounter3">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Counter3
+
+type/ Counter
+
+name/ Цель
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cUserSignal3">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ UserSignal3
+
+type/ UserSignal
+
+label/ УГЛ
+
+name/ УгловойПоворот
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCounter4">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Counter4
+
+type/ Counter
+
+name/ Ширина
+
+label/ ШИР
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCounter2">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Counter2
+
+type/ Counter
+
+label/ СПР
+
+name/ Спереди
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <node id="cCounter5">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_COMPONENT</data>
+      <data key="dData">id/ Counter5
+
+type/ Counter
+
+label/ СЗД
+
+name/ Сзади
+
+</data>
+      <data key="dLapkiSchemePosition">
+        <point x="30" y="30"></point>
+      </data>
+    </node>
+    <edge id="dtyjeuaqhummzzogjzzt" source="gxkelhdiguspwoqsyvsv" target="sbjucpslxyamojsiiqov"></edge>
+    <edge id="gefagssmlbxoyhozzxdm" source="nweldmxlpuhedfyjotcq" target="fdhcuhykxiildnxeuxjc"></edge>
+    <edge id="booaxdqcngqmgbdyfxvp" source="sbjucpslxyamojsiiqov" target="bhabuvdmjqvjnihtigni">
+      <data key="dData">Sensor1.got_walls[Sensor1.wall_straight != 0]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="2058.2499999999995" y="114.35000000000011"></point>
+      </data>
+    </edge>
+    <edge id="uuvzjsvfvvmvnivzyjbc" source="yowabnqzxjnoncespzon" target="wncdwpawtcnbqcjlwqoi">
+      <data key="dData">UserSignal1.isCalled[Compass1.y == 1]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="1369.1500000000012" y="504.3499999999992"></point>
+      </data>
+    </edge>
+    <edge id="dhftqqeoabsnnaetpsnu" source="bhabuvdmjqvjnihtigni" target="ibijcocezttgvetmnfuf">
+      <data key="dData">Sensor1.got_walls[Sensor1.wall_straight != 0]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="2072.299999999998" y="688.2999999999996"></point>
+      </data>
+    </edge>
+    <edge id="txxezoswabpfssgnwyeq" source="wojwktzppcvtdwleijzk" target="spakzotbopxeqfpjwxhp">
+      <data key="dData">UserSignal1.isCalled[Compass1.x == 2]/
+Mover1.move_forward()
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="848.9000000000003" y="979.7500000000003"></point>
+      </data>
+    </edge>
+    <edge id="gtgzeiewobobpyldcyzj" source="spakzotbopxeqfpjwxhp" target="yqdldevsseneaeezvuli">
+      <data key="dData">UserSignal1.isCalled[Compass1.y == Counter3.value]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="837.9999999999999" y="1468.85"></point>
+      </data>
+    </edge>
+    <edge id="ewqebxyevelfoxbztsdy" source="fdhcuhykxiildnxeuxjc" target="wojwktzppcvtdwleijzk">
+      <data key="dData">UserSignal1.isCalled[Counter2.value == Counter5.value]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="842.4499999999971" y="595.6999999999982"></point>
+      </data>
+    </edge>
+    <edge id="uxdoxoztjethbsfxiyjf" source="yqdldevsseneaeezvuli" target="doumffqxndutcmxdehvw">
+      <data key="dData">UserSignal1.isCalled[Compass1.x == Counter3.value]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="1327.749999999999" y="1385.0000000000002"></point>
+      </data>
+    </edge>
+    <edge id="ndsyzudmniyzjbscyvdu" source="doumffqxndutcmxdehvw" target="yowabnqzxjnoncespzon">
+      <data key="dData">UserSignal1.isCalled[Compass1.x == 1]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="1359.849999999997" y="917.4999999999985"></point>
+      </data>
+    </edge>
+    <edge id="kllfusdfdwyjwjunsjfp" source="wncdwpawtcnbqcjlwqoi" target="kslygzkeaybmblhomfwz">
+      <data key="dData">UserSignal1.isCalled[Compass1.x == Counter3.value]/
+
+</data>
+      <data key="dLabelGeometry">
+        <point x="1863.3500000000022" y="464.0999999999994"></point>
+      </data>
+    </edge>
+  </graph>
+</graphml>
