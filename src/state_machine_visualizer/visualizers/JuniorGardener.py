@@ -30,10 +30,19 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         self.width = 10
         self.height = 8
         self.orientation = 'Север'  # новый параметр
-        self.matrix = [[0, 0, 0, 0],
-                       [0, 0, 0, 0],
-                       [0, 0, 0, 0]]
+        # Отдельно храним редактируемое поле и поле результата
+        self.editable_field = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        self.result_field = None  # появляется после запуска
+        self.edit_mode = False  # Режим редактирования поля
+        self.current_gardener = None  # Текущий экземпляр gardener
         super().__init__(parent, state_machine_data)
+
+    def get_display_matrix(self):
+        """Возвращает матрицу, которая должна отображаться в текущем режиме."""
+        if self.edit_mode:
+            return self.editable_field
+        # В режиме просмотра показываем результат, если он есть, иначе исходное поле
+        return self.result_field if self.result_field is not None else self.editable_field
 
     def create_initial_view(self):
         """Создает исходное отображение машины состояний."""
@@ -41,10 +50,18 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         main_frame = ttk.Frame(self.parent)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Заголовок
-        title_label = ttk.Label(main_frame, text="Junior Gardener - Машина состояний",
+        # Заголовок и кнопка переключения режимов
+        header_frame = ttk.Frame(main_frame)
+        header_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        title_label = ttk.Label(header_frame, text="Junior Gardener - Машина состояний",
                                 font=("Arial", 14, "bold"))
-        title_label.pack(pady=(0, 15))
+        title_label.pack(side=tk.LEFT)
+        
+        # Кнопка переключения режимов
+        self.mode_button = ttk.Button(header_frame, text="✏️ Режим редактирования",
+                                     command=self.toggle_edit_mode)
+        self.mode_button.pack(side=tk.RIGHT)
 
         # Информация о машине состояний
         if self.state_machine_data:
@@ -122,9 +139,8 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             if "Ориентация" in settings:
                 self.orientation = settings["Ориентация"]
 
-            # Пересоздаем матрицу с новыми размерами
-            self.matrix = [[0 for _ in range(self.width)]
-                           for _ in range(self.height)]
+            # Обновляем размеры матрицы
+            self.ensure_matrix_size()
 
             # Перерисовываем матрицу
             if hasattr(self, 'matrix_frame'):
@@ -138,12 +154,97 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         except (ValueError, TypeError) as e:
             print(f"Ошибка при применении настроек: {e}")
 
+    def toggle_edit_mode(self):
+        """Переключает режим редактирования поля"""
+        self.edit_mode = not self.edit_mode
+        
+        if self.edit_mode:
+            self.mode_button.config(text="👁️ Режим просмотра")
+        else:
+            self.mode_button.config(text="✏️ Режим редактирования")
+        
+        # Перерисовываем матрицу с учетом нового режима
+        if hasattr(self, 'matrix_frame'):
+            for widget in self.matrix_frame.winfo_children():
+                widget.destroy()
+            self.draw_matrix()
+            self.matrix_frame.update_idletasks()
+            if hasattr(self, 'canvas'):
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_cell_click(self, row, col):
+        """Обрабатывает клик по ячейке в режиме редактирования"""
+        if not self.edit_mode:
+            return
+        
+        # Проверяем границы матрицы
+        if row < 0 or row >= self.height or col < 0 or col >= self.width:
+            return
+        
+        # Убеждаемся, что матрица имеет правильные размеры
+        if row >= len(self.editable_field) or col >= len(self.editable_field[row]):
+            return
+        
+        # Циклически изменяем значение: 0 -> -1 -> 1 -> 2 -> 3 -> 0
+        current_value = self.editable_field[row][col]
+        if current_value == 0:
+            new_value = -1
+        elif current_value == -1:
+            new_value = 1
+        elif current_value == 1:
+            new_value = 2
+        elif current_value == 2:
+            new_value = 3
+        else:  # current_value == 3
+            new_value = 0
+        
+        self.editable_field[row][col] = new_value
+        
+        # Перерисовываем только эту ячейку
+        self.redraw_cell(row, col)
+
+    def redraw_cell(self, row, col):
+        """Перерисовывает конкретную ячейку"""
+        if not hasattr(self, 'matrix_frame'):
+            return
+        
+        # Находим и удаляем старую ячейку
+        for widget in self.matrix_frame.winfo_children():
+            widget_info = widget.grid_info()
+            if widget_info.get('row') == row and widget_info.get('column') == col:
+                widget.destroy()
+                break
+        
+        # Создаем новую ячейку
+        self.create_cell(row, col)
+
+    def set_field(self, field_matrix):
+        """Устанавливает поле для gardener"""
+        if hasattr(self, 'current_gardener') and self.current_gardener:
+            self.current_gardener.set_field(field_matrix)
+        # исходное поле обновляем отдельно
+        self.editable_field = field_matrix
+        # Перерисовываем матрицу
+        if hasattr(self, 'matrix_frame'):
+            for widget in self.matrix_frame.winfo_children():
+                widget.destroy()
+            self.draw_matrix()
+            self.matrix_frame.update_idletasks()
+            if hasattr(self, 'canvas'):
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def ensure_matrix_size(self):
+        """Убеждается, что исходное поле имеет правильные размеры"""
+        new_matrix = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        for row in range(min(len(self.editable_field), self.height)):
+            for col in range(min(len(self.editable_field[row]) if row < len(self.editable_field) else 0, self.width)):
+                new_matrix[row][col] = self.editable_field[row][col]
+        self.editable_field = new_matrix
+
     def run_state_machine(self):
         """Запускает машину состояний и возвращает результат."""
         try:
-            # Создаем экземпляр Gardener с текущими размерами
             gardener = Gardener(self.width, self.height)
-            # Присваиваем ориентацию
             if self.orientation == "Север":
                 gardener.orientation = gardener.NORTH
             elif self.orientation == "Юг":
@@ -153,51 +254,50 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             elif self.orientation == "Восток":
                 gardener.orientation = gardener.EAST
 
-            # Создаем машину состояний из данных
             if not self.state_machine_data:
                 raise ValueError("Данные машины состояний не загружены")
 
-            # Получаем CGMLStateMachine из уже распарсенных данных
             cgml_sm = self.state_machine_data.get('cgml_state_machine')
             if not cgml_sm:
                 raise ValueError("CGMLStateMachine не найден в данных")
 
-            # Создаем StateMachine с параметром gardener
+            # используем неизменяемое пользователем исходное поле
+            gardener.set_field(self.editable_field)
+
             sm = StateMachine(cgml_sm, sm_parameters={'gardener': gardener})
 
-            # Запускаем машину состояний
-            print(
-                f"Запускаю машину состояний с Gardener (поле {self.width}x{self.height})")
+            print(f"Запускаю машину состояний с Gardener (поле {self.width}x{self.height})")
             result = run_state_machine(sm, [], timeout_sec=1000.0)
-            # Сохраняем gardener для отображения поля
             self.current_gardener = gardener
-
+            # сохраняем поле результата отдельно
+            self.result_field = gardener.field
             return result
 
         except GardenerCrashException as e:
             import tkinter.messagebox as mb
             print(f"Gardener упал: {e}")
-            # Показываем пользователю сообщение об ошибке
             mb.showerror("Ошибка выполнения", f"Gardener упал: {e}")
-            # Сохраняем gardener для отображения поля даже при крахе
             if 'gardener' in locals():
                 self.current_gardener = gardener
-            # Возвращаем специальный результат для краша (timeout=True)
+                self.result_field = gardener.field
             return StateMachineResult(True, EventLoop.events, EventLoop.called_events, sm.components)
         except Exception as e:
-            print(f"Ошибка при запуске машины состояний: {e}")
+            import tkinter.messagebox as mb
+            message_text = str(e)
+            if 'Клетка уже засажена' in message_text:
+                mb.showerror("Ошибка", "Ошибка! Клетка уже засажена")
+            else:
+                mb.showerror("Ошибка выполнения", message_text)
+            if 'gardener' in locals():
+                self.current_gardener = gardener
             return None
 
     def update_with_result(self, result: StateMachineResult):
         """Обновляет отображение с результатом работы машины состояний."""
         print(f"Обновляю отображение с результатом: {result}")
-
-        # Обновляем информацию о результате
         if hasattr(self, 'widget') and self.widget:
-            # Находим существующий info_label и обновляем его
             for child in self.widget.winfo_children():
                 if isinstance(child, ttk.Label) and "Платформа:" in child.cget("text"):
-                    # Проверяем, был ли краш Gardener
                     if hasattr(result, 'gardener_crashed'):
                         result_text = f"Результат выполнения:\n"
                         result_text += f"⚠️ Gardener упал во время выполнения!\n"
@@ -215,70 +315,74 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                     child.config(text=result_text)
                     break
 
-        # Обновляем матрицу с данными из Gardener
-        if hasattr(self, 'current_gardener') and self.current_gardener:
-            self.matrix = self.current_gardener.field
-            if hasattr(self, 'matrix_frame'):
-                # Очищаем старую матрицу
-                for widget in self.matrix_frame.winfo_children():
-                    widget.destroy()
-                # Перерисовываем матрицу с новыми данными
-                self.draw_matrix()
-                self.matrix_frame.update_idletasks()
-                if hasattr(self, 'canvas'):
-                    self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        # при обновлении отображаем результат, не трогая исходное поле
+        if hasattr(self, 'matrix_frame'):
+            for widget in self.matrix_frame.winfo_children():
+                widget.destroy()
+            self.draw_matrix()
+            self.matrix_frame.update_idletasks()
+            if hasattr(self, 'canvas'):
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def draw_matrix(self):
         """Отрисовывает матрицу в виде таблицы с выделением gardener"""
-        cell_size = 40
+        matrix = self.get_display_matrix()
+        # на случай рассинхронизации размеров
+        rows = self.height if self.edit_mode else len(matrix)
+        cols = self.width if self.edit_mode else (len(matrix[0]) if matrix else 0)
+        for row in range(rows):
+            for col in range(cols):
+                self.create_cell(row, col)
 
-        # Получаем координаты gardener, если есть
+    def create_cell(self, row, col):
+        """Создает отдельную ячейку матрицы"""
+        cell_size = 40
+        matrix = self.get_display_matrix()
+        # Получаем значение безопасно
+        value = 0
+        if row < len(matrix) and matrix and col < len(matrix[0]):
+            value = matrix[row][col]
+
         gardener_pos = None
         if hasattr(self, 'current_gardener') and self.current_gardener:
             if hasattr(self.current_gardener, 'x') and hasattr(self.current_gardener, 'y'):
-                gardener_pos = (self.current_gardener.y, self.current_gardener.x)  # (row, col)
+                gardener_pos = (self.current_gardener.y, self.current_gardener.x)
 
-        for row in range(self.height):
-            for col in range(self.width):
-                if row < len(self.matrix) and col < len(self.matrix[0]):
-                    value = self.matrix[row][col]
-                else:
-                    value = 0
+        if value == 0:
+            cell_color = '#f0f0f0'
+        elif value == 1:
+            cell_color = '#ff6b6b'
+        elif value == 2:
+            cell_color = '#4ecdc4'
+        elif value == 3:
+            cell_color = '#45b7d1'
+        elif value == -1:
+            cell_color = '#2c3e50'
+        else:
+            cell_color = '#f0f0f0'
 
-                # Определяем цвет ячейки в зависимости от значения
-                if value == 0:
-                    cell_color = '#f0f0f0'  # Пустая клетка - светло-серый
-                elif value == 1:
-                    cell_color = '#ff6b6b'  # Роза - красный
-                elif value == 2:
-                    cell_color = '#4ecdc4'  # Мята - бирюзовый
-                elif value == 3:
-                    cell_color = '#45b7d1'  # Василек - синий
-                elif value == -1:
-                    cell_color = '#2c3e50'  # Стена - темно-серый
-                else:
-                    cell_color = '#f0f0f0'  # Неизвестное значение - светло-серый
+        if gardener_pos == (row, col) and not self.edit_mode:
+            border_color = '#ffa500'
+            border_width = 3
+        else:
+            border_color = '#cccccc'
+            border_width = 1
 
-                # Определяем стиль рамки для gardener
-                if gardener_pos == (row, col):
-                    border_color = '#ffa500'  # Оранжевая рамка
-                    border_width = 3
-                else:
-                    border_color = '#cccccc'
-                    border_width = 1
+        cell = tk.Frame(self.matrix_frame, bg=cell_color, relief=tk.RAISED, bd=border_width,
+                        width=cell_size, height=cell_size, highlightbackground=border_color, highlightcolor=border_color, highlightthickness=border_width)
+        cell.grid(row=row, column=col, padx=1, pady=1, sticky="nsew")
+        cell.grid_propagate(False)
 
-                # Создаем ячейку с соответствующим цветом и рамкой
-                cell = tk.Frame(self.matrix_frame, bg=cell_color, relief=tk.RAISED, bd=border_width,
-                                width=cell_size, height=cell_size, highlightbackground=border_color, highlightcolor=border_color, highlightthickness=border_width)
-                cell.grid(row=row, column=col,
-                          padx=1, pady=1, sticky="nsew")
-                cell.grid_propagate(False)
+        if self.edit_mode:
+            cell.bind("<Button-1>", lambda e, r=row, c=col: self.on_cell_click(r, c))
+            cell.config(cursor="hand2")
 
-                # Добавляем текст значения
-                value_text = str(value)
-                label = tk.Label(cell, text=value_text, bg=cell_color,
-                                 font=("Arial", 8, "bold"), wraplength=cell_size-10)
-                label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        value_text = str(value)
+        label = tk.Label(cell, text=value_text, bg=cell_color, font=("Arial", 8, "bold"), wraplength=cell_size-10)
+        label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        if self.edit_mode:
+            label.bind("<Button-1>", lambda e, r=row, c=col: self.on_cell_click(r, c))
+            label.config(cursor="hand2")
 
 
 def create_matrix_visualizer(parent, settings_dict):
