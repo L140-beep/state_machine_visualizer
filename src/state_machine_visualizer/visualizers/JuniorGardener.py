@@ -178,22 +178,17 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         except (ValueError, TypeError) as e:
             print(f"Ошибка при применении настроек: {e}")
 
-    def toggle_edit_mode(self):
-        """Переключает режим редактирования поля"""
-        self.edit_mode = not self.edit_mode
-        
+    def set_edit_mode(self, flag: bool):
+        """Устанавливает режим редактирования и обновляет UI/рендеринг."""
+        self.edit_mode = flag
         if self.edit_mode:
             self.mode_button.config(text="👁️ Режим просмотра")
-            # показать панель инструментов
             if hasattr(self, 'edit_toolbar'):
                 self.edit_toolbar.pack(fill=tk.X, pady=(0, 10))
         else:
             self.mode_button.config(text="✏️ Режим редактирования")
-            # скрыть панель инструментов
             if hasattr(self, 'edit_toolbar'):
                 self.edit_toolbar.pack_forget()
-        
-        # Перерисовываем матрицу с учетом нового режима
         if hasattr(self, 'matrix_frame'):
             for widget in self.matrix_frame.winfo_children():
                 widget.destroy()
@@ -201,6 +196,10 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             self.matrix_frame.update_idletasks()
             if hasattr(self, 'canvas'):
                 self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def toggle_edit_mode(self):
+        """Переключает режим редактирования поля"""
+        self.set_edit_mode(not self.edit_mode)
 
     def _get_selected_value(self) -> int:
         """Возвращает выбранное значение из селектора цветов."""
@@ -337,6 +336,8 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             self.current_gardener = gardener
             # сохраняем поле результата отдельно
             self.result_field = gardener.field
+            # переключаемся в режим просмотра
+            self.set_edit_mode(False)
             return result
 
         except GardenerCrashException as e:
