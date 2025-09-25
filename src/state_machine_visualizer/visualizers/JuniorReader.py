@@ -41,11 +41,17 @@ class JuniorReaderVisualizer(BaseVisualizer):
         self.update_signals_list([])
 
     def update_signals_list(self, signals):
-        """Обновляет скроллируемый список сигналов."""
+        """Обновляет скроллируемый список сигналов с маппингом."""
+        signal_map = {
+            'impulseA': 'Импульс А',
+            'impulseB': 'Импульс Б',
+            'impulseC': 'Импульс В',
+        }
         for widget in self.signals_list_frame.winfo_children():
             widget.destroy()
         for i, signal in enumerate(signals):
-            label = ttk.Label(self.signals_list_frame, text=signal, font=(
+            display_signal = signal_map.get(signal, signal)
+            label = ttk.Label(self.signals_list_frame, text=display_signal, font=(
                 "Consolas", 10), anchor="w", justify=tk.LEFT)
             label.grid(row=i, column=0, sticky="w", padx=10, pady=2)
         self.signals_list_frame.update_idletasks()

@@ -50,7 +50,7 @@ class MainApp(tk.Tk):
                                   command=self.run_simulation, style='Sidebar.TButton', state='disabled')
         self.run_btn.pack(fill=tk.X, padx=10, pady=5)
 
-        self.settings_btn = ttk.Button(sidebar, text="Настройки",
+        self.settings_btn = ttk.Button(sidebar, text="Настройки запуска",
                                        command=self.open_settings, style='Sidebar.TButton', state='disabled')
         self.settings_btn.pack(fill=tk.X, padx=10, pady=5)
 
