@@ -457,6 +457,23 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             label.bind("<ButtonRelease-1>", lambda e: self.stop_paint())
             label.config(cursor="hand2")
 
+        # Если это клетка gardener и мы в режиме просмотра, добавим индикатор направления
+        if gardener_pos == (row, col) and not self.edit_mode and hasattr(self, 'current_gardener'):
+            try:
+                orientation = self.current_gardener.orientation
+                indicator_color = '#8e44ad'  # фиолетовый, не оранжевый
+                thickness = 6
+                if orientation == self.current_gardener.NORTH:
+                    tk.Frame(cell, bg=indicator_color, height=thickness, width=cell_size).place(relx=0.5, rely=0.0, anchor=tk.N)
+                elif orientation == self.current_gardener.SOUTH:
+                    tk.Frame(cell, bg=indicator_color, height=thickness, width=cell_size).place(relx=0.5, rely=1.0, anchor=tk.S)
+                elif orientation == self.current_gardener.WEST:
+                    tk.Frame(cell, bg=indicator_color, width=thickness, height=cell_size).place(relx=0.0, rely=0.5, anchor=tk.W)
+                elif orientation == self.current_gardener.EAST:
+                    tk.Frame(cell, bg=indicator_color, width=thickness, height=cell_size).place(relx=1.0, rely=0.5, anchor=tk.E)
+            except Exception:
+                pass
+
     def clear_field(self):
         """Очищает исходное поле (в режиме редактирования)"""
         # Сброс исходного поля в нули по текущим размерам
