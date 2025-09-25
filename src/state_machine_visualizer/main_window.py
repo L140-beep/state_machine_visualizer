@@ -5,7 +5,7 @@ import os
 from .style import Style
 from .theme import COLORS, SIZES
 from .settings_window import SettingsWindow
-from .simulator import CGMLParser, StateMachineResult
+from .simulator import CGMLParser
 from .visualizers import get_visualizer_class
 
 
@@ -102,6 +102,10 @@ class MainApp(tk.Tk):
                         'meta': state_machine.meta,
                         'cgml_state_machine': state_machine  # Сохраняем полный CGMLStateMachine
                     }
+
+                    # Показываем имя файла в заголовке приложения
+                    filename = os.path.basename(file_path)
+                    self.title(f"Визуализатор машин состояний [{filename}]")
 
                     # Проверяем, совпадает ли платформа с текущей
                     current_platform = None
