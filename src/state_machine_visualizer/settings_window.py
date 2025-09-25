@@ -10,9 +10,12 @@ class SettingsWindow:
         """Обновляет содержимое окна настроек динамически."""
         if new_settings is not None:
             self.settings = new_settings
-        # Очищаем содержимое scrollable_frame
+        # Очищаем содержимое scrollable_frame, но сохраняем кнопку
         for widget in self.scrollable_frame.winfo_children():
-            widget.destroy()
+            if hasattr(self, 'button_frame') and widget != self.button_frame:
+                widget.destroy()
+            elif not hasattr(self, 'button_frame'):
+                widget.destroy()
 
         # Заголовки таблицы
         ttk.Label(self.scrollable_frame, text="Название",
@@ -48,15 +51,14 @@ class SettingsWindow:
 
         self.scrollable_frame.columnconfigure(1, weight=1)
 
-        # Фрейм для кнопки сохранения
-        button_frame = ttk.Frame(
-            self.scrollable_frame, style='Settings.TFrame')
-        button_frame.grid(row=len(self.settings)+2, column=0,
-                          columnspan=2, sticky="ew", pady=(20, 0))
-        save_btn = ttk.Button(button_frame, text="Сохранить",
-                              command=self.save_settings,
-                              style='Primary.TButton')
-        save_btn.pack(pady=10)
+        # Создаем или обновляем позицию кнопки сохранения
+        if not hasattr(self, 'button_frame'):
+            self.create_save_button()
+        
+        # Обновляем позицию кнопки
+        button_row = len(self.settings) + 2 if self.settings else 2
+        self.button_frame.grid(row=button_row, column=0,
+                              columnspan=2, sticky="ew", pady=(20, 0))
 
     def __init__(self, parent, visualizer_settings=None):
         self.parent = parent
@@ -100,27 +102,30 @@ class SettingsWindow:
         container.pack(fill=tk.BOTH, expand=True)
 
         # Создаем Canvas и Scrollbar
-        canvas = tk.Canvas(
+        self.canvas = tk.Canvas(
             container, bg=COLORS['settings_bg'], highlightthickness=0)
         scrollbar = ttk.Scrollbar(
-            container, orient="vertical", command=canvas.yview)
+            container, orient="vertical", command=self.canvas.yview)
 
         # Фрейм для содержимого внутри Canvas
-        self.scrollable_frame = ttk.Frame(canvas, style='Settings.TFrame')
+        self.scrollable_frame = ttk.Frame(self.canvas, style='Settings.TFrame')
 
         # Привязываем изменение размера фрейма к Canvas
         self.scrollable_frame.bind(
             "<Configure>",
-            lambda e: self.on_frame_configure(canvas)
+            lambda e: self.on_frame_configure(self.canvas)
         )
 
-        # Создаем окно в Canvas для фрейма
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        # Создаем окно в Canvas для фрейма с центрированием
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=scrollbar.set)
 
         # Упаковываем Canvas и Scrollbar
-        canvas.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        self.canvas.pack(side="left", fill="both", expand=True, padx=(0, 5))
         scrollbar.pack(side="right", fill="y")
+
+        # Привязываем изменение размера Canvas для центрирования содержимого
+        self.canvas.bind('<Configure>', lambda e: self.center_content(self.canvas))
 
         # Заголовки таблицы
         ttk.Label(self.scrollable_frame, text="Название",
@@ -163,7 +168,7 @@ class SettingsWindow:
         # Настройка весов колонок для растяжения
         self.scrollable_frame.columnconfigure(1, weight=1)
 
-    # Кнопка 'Сохранить' теперь создаётся только в refresh_widgets
+        # Кнопка сохранения будет создана в refresh_widgets
 
         # Привязываем обработчик изменения размера
         self.window.bind('<Configure>', self.on_window_configure)
@@ -171,9 +176,40 @@ class SettingsWindow:
         # Обновляем геометрию после создания виджетов
         self.window.after(100, self.adjust_window_size)
 
+    def create_save_button(self):
+        """Создает кнопку сохранения внизу окна"""
+        # Фрейм для кнопки сохранения
+        self.button_frame = ttk.Frame(
+            self.scrollable_frame, style='Settings.TFrame')
+        # Позиция будет установлена в refresh_widgets
+        
+        self.save_btn = ttk.Button(self.button_frame, text="Сохранить",
+                                  command=self.save_settings,
+                                  style='Primary.TButton')
+        self.save_btn.pack(pady=10)
+
     def on_frame_configure(self, canvas):
         """Обновляет область прокрутки при изменении размера фрейма"""
         canvas.configure(scrollregion=canvas.bbox("all"))
+        # Центрируем содержимое после обновления
+        self.center_content(canvas)
+
+    def center_content(self, canvas):
+        """Центрирует содержимое в Canvas"""
+        canvas.update_idletasks()
+        # Получаем размеры Canvas и содержимого
+        canvas_width = canvas.winfo_width()
+        frame_width = self.scrollable_frame.winfo_reqwidth()
+        
+        # Вычисляем позицию для центрирования
+        if frame_width < canvas_width:
+            x = (canvas_width - frame_width) // 2
+        else:
+            x = 0
+        
+        # Обновляем позицию окна в Canvas
+        if canvas.find_all():
+            canvas.coords(canvas.find_all()[0], x, 0)
 
     def on_window_configure(self, event):
         """Обрабатывает изменение размера окна"""
