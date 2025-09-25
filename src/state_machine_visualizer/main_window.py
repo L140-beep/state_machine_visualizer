@@ -103,6 +103,19 @@ class MainApp(tk.Tk):
                         'cgml_state_machine': state_machine  # Сохраняем полный CGMLStateMachine
                     }
 
+                    # Проверяем, совпадает ли платформа с текущей
+                    current_platform = None
+                    if self.current_visualizer and hasattr(self.current_visualizer, 'state_machine_data'):
+                        current_platform = self.current_visualizer.state_machine_data.get('platform')
+                    if current_platform and str(current_platform).lower() == str(platform).lower():
+                        print(f"Платформа совпадает ({platform}), не перезагружаем компонент.")
+                        # Только обновляем данные и UI, не пересоздаём визуализатор
+                        self.file_path.set(file_path)
+                        self.enable_buttons()
+                        messagebox.showinfo(
+                            "Успех", f"Файл загружен успешно!\nПлатформа: {platform}")
+                        return
+
                     # Импортируем модуль с нужным визуализатором
                     print(f"Загружаю визуализатор для платформы: {platform}")
                     self.load_visualizer(platform)
