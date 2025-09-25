@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import json
 import os
-from .theme import COLORS
+from state_machine_visualizer.theme import COLORS
 
 
 class SettingsWindow:

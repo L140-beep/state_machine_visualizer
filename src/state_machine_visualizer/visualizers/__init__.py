@@ -1,6 +1,6 @@
-from .base import BaseVisualizer
-from .JuniorGardener import JuniorGardenerVisualizer
-from .JuniorReader import JuniorReaderVisualizer
+from state_machine_visualizer.visualizers.base import BaseVisualizer
+from state_machine_visualizer.visualizers.JuniorGardener import JuniorGardenerVisualizer
+from state_machine_visualizer.visualizers.JuniorReader import JuniorReaderVisualizer
 
 
 # Словарь для сопоставления платформ с классами визуализаторов

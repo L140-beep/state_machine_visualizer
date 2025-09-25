@@ -1,5 +1,5 @@
 import tkinter.ttk as ttk
-from .theme import COLORS, FONTS, SIZES
+from state_machine_visualizer.theme import COLORS, FONTS, SIZES
 
 
 class Style:

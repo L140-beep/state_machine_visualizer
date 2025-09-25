@@ -2,11 +2,11 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
 
-from .style import Style
-from .theme import COLORS, SIZES
-from .settings_window import SettingsWindow
-from .simulator import CGMLParser
-from .visualizers import get_visualizer_class
+from state_machine_visualizer.style import Style
+from state_machine_visualizer.theme import COLORS, SIZES
+from state_machine_visualizer.settings_window import SettingsWindow
+from state_machine_visualizer.simulator import CGMLParser
+from state_machine_visualizer.visualizers import get_visualizer_class
 
 
 class MainApp(tk.Tk):
@@ -116,8 +116,6 @@ class MainApp(tk.Tk):
                         # Только обновляем данные и UI, не пересоздаём визуализатор
                         self.file_path.set(file_path)
                         self.enable_buttons()
-                        messagebox.showinfo(
-                            "Успех", f"Файл загружен успешно!\nПлатформа: {platform}")
                         return
 
                     # Импортируем модуль с нужным визуализатором
@@ -126,8 +124,6 @@ class MainApp(tk.Tk):
 
                     self.file_path.set(file_path)
                     self.enable_buttons()  # Разблокируем кнопки после успешной загрузки
-                    messagebox.showinfo(
-                        "Успех", f"Файл загружен успешно!\nПлатформа: {platform}")
 
                 else:
                     messagebox.showerror(

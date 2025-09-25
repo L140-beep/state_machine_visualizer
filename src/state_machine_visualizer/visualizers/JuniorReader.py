@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Any
 
-from .base import BaseVisualizer
-from ..simulator import StateMachineResult, run_state_machine, StateMachine
+from state_machine_visualizer.visualizers.base import BaseVisualizer
+from state_machine_visualizer.simulator import StateMachineResult, run_state_machine, StateMachine
 
 
 class JuniorReaderVisualizer(BaseVisualizer):

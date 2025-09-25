@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from ..simulator import StateMachineResult
+from state_machine_visualizer.simulator import StateMachineResult
 
 class BaseVisualizer(ABC):
     """Базовый класс для всех визуализаторов."""
