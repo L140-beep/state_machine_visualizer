@@ -28,9 +28,19 @@ class SettingsWindow:
             for i, (key, value) in enumerate(self.settings.items(), start=1):
                 ttk.Label(self.scrollable_frame, text=key, style='Settings.TLabel').grid(
                     row=i, column=0, padx=10, pady=6, sticky="w")
-                entry = ttk.Entry(self.scrollable_frame, style='Custom.TEntry')
-                entry.insert(0, value)
-                entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
+
+                if key == "Ориентация":
+                    directions = ["Север", "Юг", "Запад", "Восток"]
+                    entry = ttk.Combobox(self.scrollable_frame, values=directions, state="readonly")
+                    if value in directions:
+                        entry.set(value)
+                    else:
+                        entry.set("Север")
+                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
+                else:
+                    entry = ttk.Entry(self.scrollable_frame, style='Custom.TEntry')
+                    entry.insert(0, value)
+                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
                 self.entries[key] = entry
         else:
             ttk.Label(self.scrollable_frame, text="Нет доступных настроек.", style='Settings.TLabel').grid(
@@ -61,7 +71,8 @@ class SettingsWindow:
         self.window.minsize(400, 300)
 
         self.create_widgets()  # теперь виджеты создаются только после загрузки настроек
-        self.center_window()
+    # Центрируем окно только после полной отрисовки (см. adjust_window_size)
+    # self.center_window()  # убрано отсюда
 
     def center_window(self):
         """Центрирует окно относительно родительского"""
@@ -122,11 +133,18 @@ class SettingsWindow:
         # Загрузка существующих настроек
         self.entries = {}
         if self.settings:
+            # Определяем, Gardener ли это (по ключам или платформе)
+            platform = ''
+            if 'platform' in self.settings:
+                platform = str(self.settings['platform']).lower()
+            elif self.visualizer_settings and 'platform' in self.visualizer_settings:
+                platform = str(self.visualizer_settings['platform']).lower()
+            is_gardener = 'gardener' in platform
             for i, (key, value) in enumerate(self.settings.items(), start=1):
                 ttk.Label(self.scrollable_frame, text=key, style='Settings.TLabel').grid(
                     row=i, column=0, padx=10, pady=6, sticky="w")
 
-                if key == "Ориентация":
+                if key == "Ориентация" and is_gardener:
                     entry = ttk.Combobox(self.scrollable_frame, values=[
                                          "Север", "Юг", "Запад", "Восток"], state="readonly")
                     entry.set(value)
@@ -204,6 +222,7 @@ class SettingsWindow:
             for key, value in default_basic_settings.items():
                 if key not in self.visualizer_settings:
                     self.settings[key] = value
+
 
     def save_settings(self):
         # Собираем настройки из полей ввода
