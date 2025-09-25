@@ -29,7 +29,7 @@ class JuniorGardenerVisualizer(BaseVisualizer):
     def __init__(self, parent, state_machine_data: Dict[str, Any]):
         self.width = 10
         self.height = 8
-        self.orientation = 'Север'  # новый параметр
+        self.orientation = 'Юг'  # новый параметр
         # Отдельно храним редактируемое поле и поле результата
         self.editable_field = [[0 for _ in range(self.width)] for _ in range(self.height)]
         self.result_field = None  # появляется после запуска
