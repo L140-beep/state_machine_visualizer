@@ -229,10 +229,15 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                     self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def draw_matrix(self):
-        """Отрисовывает матрицу в виде таблицы"""
+        """Отрисовывает матрицу в виде таблицы с выделением gardener"""
         cell_size = 40
 
-        # Заполняем матрицу значениями (без заголовков)
+        # Получаем координаты gardener, если есть
+        gardener_pos = None
+        if hasattr(self, 'current_gardener') and self.current_gardener:
+            if hasattr(self.current_gardener, 'x') and hasattr(self.current_gardener, 'y'):
+                gardener_pos = (self.current_gardener.y, self.current_gardener.x)  # (row, col)
+
         for row in range(self.height):
             for col in range(self.width):
                 if row < len(self.matrix) and col < len(self.matrix[0]):
@@ -254,9 +259,17 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                 else:
                     cell_color = '#f0f0f0'  # Неизвестное значение - светло-серый
 
-                # Создаем ячейку с соответствующим цветом
-                cell = tk.Frame(self.matrix_frame, bg=cell_color, relief=tk.RAISED, bd=1,
-                                width=cell_size, height=cell_size)
+                # Определяем стиль рамки для gardener
+                if gardener_pos == (row, col):
+                    border_color = '#ffa500'  # Оранжевая рамка
+                    border_width = 3
+                else:
+                    border_color = '#cccccc'
+                    border_width = 1
+
+                # Создаем ячейку с соответствующим цветом и рамкой
+                cell = tk.Frame(self.matrix_frame, bg=cell_color, relief=tk.RAISED, bd=border_width,
+                                width=cell_size, height=cell_size, highlightbackground=border_color, highlightcolor=border_color, highlightthickness=border_width)
                 cell.grid(row=row, column=col,
                           padx=1, pady=1, sticky="nsew")
                 cell.grid_propagate(False)
