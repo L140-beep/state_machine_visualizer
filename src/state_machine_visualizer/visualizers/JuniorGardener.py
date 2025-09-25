@@ -63,6 +63,30 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                                      command=self.toggle_edit_mode)
         self.mode_button.pack(side=tk.RIGHT)
 
+        # Панель инструментов редактирования (только для режима редактирования)
+        self.edit_toolbar = ttk.Frame(main_frame)
+        # Маппинг "цветов" в значения поля
+        self.color_items = [
+            ("Пусто (0)", 0),
+            ("Стена (-1)", -1),
+            ("Роза (1)", 1),
+            ("Мята (2)", 2),
+            ("Василёк (3)", 3),
+        ]
+        self.selected_color_var = tk.StringVar(value=self.color_items[2][0])  # по умолчанию Роза (1)
+        ttk.Label(self.edit_toolbar, text="Инструмент:").pack(side=tk.LEFT)
+        self.color_selector = ttk.Combobox(
+            self.edit_toolbar,
+            state="readonly",
+            values=[label for label, _ in self.color_items],
+            textvariable=self.selected_color_var,
+            width=18,
+        )
+        self.color_selector.pack(side=tk.LEFT, padx=(6, 8))
+        # Кнопка очистки поля
+        ttk.Button(self.edit_toolbar, text="Очистить поле", command=self.clear_field).pack(side=tk.LEFT)
+        # По умолчанию панель скрыта (покажем при входе в режим редактирования)
+
         # Информация о машине состояний
         if self.state_machine_data:
             platform = self.state_machine_data.get('platform', 'Неизвестно')
@@ -160,8 +184,14 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         
         if self.edit_mode:
             self.mode_button.config(text="👁️ Режим просмотра")
+            # показать панель инструментов
+            if hasattr(self, 'edit_toolbar'):
+                self.edit_toolbar.pack(fill=tk.X, pady=(0, 10))
         else:
             self.mode_button.config(text="✏️ Режим редактирования")
+            # скрыть панель инструментов
+            if hasattr(self, 'edit_toolbar'):
+                self.edit_toolbar.pack_forget()
         
         # Перерисовываем матрицу с учетом нового режима
         if hasattr(self, 'matrix_frame'):
@@ -171,6 +201,54 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             self.matrix_frame.update_idletasks()
             if hasattr(self, 'canvas'):
                 self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _get_selected_value(self) -> int:
+        """Возвращает выбранное значение из селектора цветов."""
+        label = self.selected_color_var.get() if hasattr(self, 'selected_color_var') else None
+        if not label:
+            return 1
+        for item_label, val in self.color_items:
+            if item_label == label:
+                return val
+        return 1
+
+    # ===== Рисование мышью в режиме редактирования =====
+    def start_paint(self, row: int, col: int):
+        """Начинает рисование (зажата ЛКМ)."""
+        if not self.edit_mode:
+            return
+        self.is_painting = True
+        self.set_cell_value(row, col, self._get_selected_value())
+
+    def stop_paint(self):
+        """Завершает рисование (отпущена ЛКМ)."""
+        self.is_painting = False
+
+    def on_cell_paint(self, row: int, col: int):
+        """Продолжает рисование при перемещении с зажатой ЛКМ."""
+        if not self.edit_mode or not getattr(self, 'is_painting', False):
+            return
+        self.set_cell_value(row, col, self._get_selected_value())
+
+    def on_hover_enter(self, event, row: int, col: int):
+        """Срабатывает при заходе курсора в ячейку; если ЛКМ зажата — красим."""
+        if not self.edit_mode:
+            return
+        # В некоторых случаях при переходе между виджетами удобнее проверять состояние кнопки
+        # Бит 0x100 соответствует зажатой ЛКМ
+        if getattr(self, 'is_painting', False) or (hasattr(event, 'state') and (event.state & 0x100)):
+            self.set_cell_value(row, col, self._get_selected_value())
+
+    def set_cell_value(self, row: int, col: int, value: int):
+        """Безопасно устанавливает значение ячейки и перерисовывает её."""
+        if row < 0 or row >= self.height or col < 0 or col >= self.width:
+            return
+        if row >= len(self.editable_field) or col >= len(self.editable_field[row]):
+            return
+        if self.editable_field[row][col] == value:
+            return
+        self.editable_field[row][col] = value
+        self.redraw_cell(row, col)
 
     def on_cell_click(self, row, col):
         """Обрабатывает клик по ячейке в режиме редактирования"""
@@ -185,20 +263,8 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         if row >= len(self.editable_field) or col >= len(self.editable_field[row]):
             return
         
-        # Циклически изменяем значение: 0 -> -1 -> 1 -> 2 -> 3 -> 0
-        current_value = self.editable_field[row][col]
-        if current_value == 0:
-            new_value = -1
-        elif current_value == -1:
-            new_value = 1
-        elif current_value == 1:
-            new_value = 2
-        elif current_value == 2:
-            new_value = 3
-        else:  # current_value == 3
-            new_value = 0
-        
-        self.editable_field[row][col] = new_value
+        # Ставим выбранное значение
+        self.editable_field[row][col] = self._get_selected_value()
         
         # Перерисовываем только эту ячейку
         self.redraw_cell(row, col)
@@ -374,15 +440,34 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         cell.grid_propagate(False)
 
         if self.edit_mode:
-            cell.bind("<Button-1>", lambda e, r=row, c=col: self.on_cell_click(r, c))
+            cell.bind("<Button-1>", lambda e, r=row, c=col: self.start_paint(r, c))
+            cell.bind("<B1-Motion>", lambda e, r=row, c=col: self.on_cell_paint(r, c))
+            cell.bind("<Enter>", lambda e, r=row, c=col: self.on_hover_enter(e, r, c))
+            cell.bind("<ButtonRelease-1>", lambda e: self.stop_paint())
             cell.config(cursor="hand2")
 
         value_text = str(value)
         label = tk.Label(cell, text=value_text, bg=cell_color, font=("Arial", 8, "bold"), wraplength=cell_size-10)
         label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         if self.edit_mode:
-            label.bind("<Button-1>", lambda e, r=row, c=col: self.on_cell_click(r, c))
+            label.bind("<Button-1>", lambda e, r=row, c=col: self.start_paint(r, c))
+            label.bind("<B1-Motion>", lambda e, r=row, c=col: self.on_cell_paint(r, c))
+            label.bind("<Enter>", lambda e, r=row, c=col: self.on_hover_enter(e, r, c))
+            label.bind("<ButtonRelease-1>", lambda e: self.stop_paint())
             label.config(cursor="hand2")
+
+    def clear_field(self):
+        """Очищает исходное поле (в режиме редактирования)"""
+        # Сброс исходного поля в нули по текущим размерам
+        self.editable_field = [[0 for _ in range(self.width)] for _ in range(self.height)]
+        # Перерисовать, если открыт виджет
+        if hasattr(self, 'matrix_frame'):
+            for widget in self.matrix_frame.winfo_children():
+                widget.destroy()
+            self.draw_matrix()
+            self.matrix_frame.update_idletasks()
+            if hasattr(self, 'canvas'):
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
 
 def create_matrix_visualizer(parent, settings_dict):
