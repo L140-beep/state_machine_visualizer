@@ -110,10 +110,17 @@ class MainApp(tk.Tk):
                     # Проверяем, совпадает ли платформа с текущей
                     current_platform = None
                     if self.current_visualizer and hasattr(self.current_visualizer, 'state_machine_data'):
-                        current_platform = self.current_visualizer.state_machine_data.get('platform')
+                        current_platform = self.current_visualizer.state_machine_data.get(
+                            'platform'
+                        )
                     if current_platform and str(current_platform).lower() == str(platform).lower():
-                        print(f"Платформа совпадает ({platform}), не перезагружаем компонент.")
-                        # Только обновляем данные и UI, не пересоздаём визуализатор
+                        print(
+                            f"Платформа совпадает ({platform}), обновляем данные визуализатора."
+                        )
+                        if hasattr(self.current_visualizer, 'update_state_machine_data'):
+                            self.current_visualizer.update_state_machine_data(
+                                self.state_machine_data
+                            )
                         self.file_path.set(file_path)
                         self.enable_buttons()
                         return

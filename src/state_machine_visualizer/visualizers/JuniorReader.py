@@ -7,6 +7,21 @@ from state_machine_visualizer.simulator import StateMachineResult, run_state_mac
 
 
 class JuniorReaderVisualizer(BaseVisualizer):
+    def update_state_machine_data(self, new_data: Dict[str, Any]):
+        """Обновляет данные машины состояний и UI для Reader."""
+        self.state_machine_data = new_data
+        # Обновляем инфо-лейбл, если он есть
+        if hasattr(self, 'widget') and self.widget:
+            for child in self.widget.winfo_children():
+                if isinstance(child, ttk.Label) and "Платформа:" in child.cget("text"):
+                    platform = new_data.get('platform', 'Неизвестно')
+                    name = new_data.get('name', 'Без названия')
+                    states_count = len(new_data.get('states', {}))
+                    transitions_count = len(new_data.get('transitions', {}))
+                    info_text = f"Платформа: {platform}\nНазвание: {name}\nСостояний: {states_count}\nПереходов: {transitions_count}"
+                    child.config(text=info_text)
+        # Можно добавить обновление списка сигналов, если требуется
+
     def __init__(self, parent, state_machine_data: Dict[str, Any]):
         super().__init__(parent, state_machine_data)
 
@@ -107,7 +122,7 @@ class JuniorReaderVisualizer(BaseVisualizer):
             # Создаем StateMachine с параметрами для Reader
             sm = StateMachine(cgml_sm, sm_parameters={
                               'message': message, 'speed': speed})
-
+            print(cgml_sm)
             # Запускаем машину состояний
             print(
                 f"Запускаю машину состояний Junior Reader с сообщением: '{message}', скорость: {speed}")
