@@ -1972,16 +1972,6 @@ class StateMachine:
 
     def intepreter_action(self, action: str):
         def resolve(val):
-            def safe_eval(val: str):
-                try:
-                    tree = ast.parse(val)
-                except SyntaxError:
-                    return val
-                for node in tree.body:
-                    if isinstance(node, ast.Expr):
-                        if isinstance(node.value, ast.Constant):
-                            return ast.literal_eval(node.value)
-                return val
             try:
                 return float(val) if '.' in val else int(val)
             except ValueError:
@@ -1991,7 +1981,7 @@ class StateMachine:
                     comp = self.components.get(comp_name)
                     if comp and hasattr(comp.obj, attr):
                         return getattr(comp.obj, attr)
-                return safe_eval(val)
+                return val
         # если не компонентная структура кода, то просто делаем eval здесь
         actions_obj = self.__parse_action(action)
         for action_obj in actions_obj:
