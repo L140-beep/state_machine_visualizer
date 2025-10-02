@@ -1918,6 +1918,16 @@ class StateMachine:
                 # Попытка привести к числу
 
                 def resolve(val):
+                    def safe_eval(val: str):
+                        try:
+                            tree = ast.parse(val)
+                        except SyntaxError:
+                            return val
+                        for node in tree.body:
+                            if isinstance(node, ast.Expr):
+                                if isinstance(node.value, ast.Constant):
+                                    return ast.literal_eval(node.value)
+                        return val
                     try:
                         return float(val) if '.' in val else int(val)
                     except ValueError:
@@ -1927,7 +1937,7 @@ class StateMachine:
                             comp = self.components.get(comp_name)
                             if comp and hasattr(comp.obj, attr):
                                 return getattr(comp.obj, attr)
-                        return val
+                        return safe_eval(val)
                 left_val = resolve(left)
                 right_val = resolve(right)
                 return op_func(left_val, right_val)
