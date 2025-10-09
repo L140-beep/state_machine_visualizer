@@ -743,6 +743,48 @@ class SchemeComponent(ABC):
 # Все классы компонентов кладутся сюда
 
 
+class CyberBear:
+    """Класс для хранения состояния КиберМишки."""
+
+    def __init__(self):
+        # Цвет левого глаза (RGBK)
+        self.left_eye = [0, 0, 0, 0]
+
+        # Цвет правого глаза (RGBK)
+        self.right_eye = [0, 0, 0, 0]
+
+        # Матрица светодиодов 5x7
+        self.matrix = [[0 for _ in range(7)] for _ in range(5)]
+
+    def set_left_eye(self, r: int, g: int, b: int, k: int):
+        """Установить цвет левого глаза."""
+        self.left_eye = [r, g, b, k]
+
+    def set_right_eye(self, r: int, g: int, b: int, k: int):
+        """Установить цвет правого глаза."""
+        self.right_eye = [r, g, b, k]
+
+    def set_matrix_pixel(self, row: int, col: int, value: int):
+        """Установить значение пикселя матрицы."""
+        if 0 <= row < 5 and 0 <= col < 7:
+            self.matrix[row][col] = value
+
+    def get_matrix_pixel(self, row: int, col: int) -> int:
+        """Получить значение пикселя матрицы."""
+        if 0 <= row < 5 and 0 <= col < 7:
+            return self.matrix[row][col]
+        return 0
+
+    def clear_matrix(self):
+        """Очистить матрицу."""
+        self.matrix = [[0 for _ in range(7)] for _ in range(5)]
+
+    def clear_eyes(self):
+        """Выключить оба глаза."""
+        self.left_eye = [0, 0, 0, 0]
+        self.right_eye = [0, 0, 0, 0]
+
+
 class Timer(SchemeComponent):
     """Component for working with time intervals."""
 
@@ -932,20 +974,40 @@ class PhotoDiode(SchemeComponent):
 class Eyes(SchemeComponent):
     """Компонент светодиодных глаз."""
 
-    def __init__(self, name: str, pin: int = 1):
+    def __init__(self, name: str, pin: int = 2):
         super().__init__(name)
+        self.is_left = pin == 2  # Пин 2 - левый глаз, Пин 1 - правый глаз
+        self.bear = None
         self.pin = pin
-        self._color = [0, 0, 0, 0]  # RGBK
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.bear = options.get('CyberBear')
+        if self.bear is None:
+            raise ValueError(
+                "CyberBear instance is required for Eyes component!")
 
     def setColorPalette(self, color: str):
         # Здесь можно добавить предопределенные цвета
         pass
 
     def setColor(self, r: int, g: int, b: int, k: int):
-        self._color = [r, g, b, k]
+        if self.bear is None:
+            return
+        # Пин 1 - правый глаз, Пин 2 - левый глаз
+        if self.pin == 2:
+            self.bear.set_left_eye(r, g, b, k)
+        elif self.pin == 1:
+            self.bear.set_right_eye(r, g, b, k)
 
     def off(self):
-        self._color = [0, 0, 0, 0]
+        if self.bear is None:
+            return
+        # Пин 1 - правый глаз, Пин 2 - левый глаз
+        if self.pin == 2:
+            self.bear.left_eye = [0, 0, 0, 0]
+        elif self.pin == 1:
+            self.bear.right_eye = [0, 0, 0, 0]
 
 
 class Microphone(SchemeComponent):
