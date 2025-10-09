@@ -737,7 +737,71 @@ class SchemeComponent(ABC):
         ...
         # raise NotImplementedError("This method should be overridden in subclasses")
 
+    def loop_action(self):
+        ...
+
 # Все классы компонентов кладутся сюда
+
+
+class Timer(SchemeComponent):
+    """Component for working with time intervals."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._start_time = None
+        self._interval = 0
+        self._enabled = True
+
+    def start(self, interval: int):
+        """Start timer with given interval in milliseconds."""
+        if self._enabled:
+            self._interval = interval / 1000.0  # Convert to seconds
+            self._start_time = time.time()
+
+    def stop(self):
+        """Stop the timer."""
+        self._start_time = None
+
+    def pause(self):
+        """Pause the timer."""
+        self._enabled = False
+
+    def resume(self):
+        """Resume the timer."""
+        self._enabled = True
+
+    def reset(self):
+        """Reset the timer to initial state."""
+        self._start_time = None
+        self._interval = 0
+        self._enabled = True
+
+    @property
+    def time(self) -> float:
+        """Get elapsed time in milliseconds."""
+        if self._start_time is None:
+            return 0
+        return (time.time() - self._start_time) * 1000
+
+    @property
+    def difference(self) -> float:
+        """Get remaining time in milliseconds."""
+        if self._start_time is None:
+            return 0
+        elapsed = time.time() - self._start_time
+        return max(0, (self._interval - elapsed) * 1000)
+
+    @property
+    def expired(self) -> bool:
+        """Check if timer has expired."""
+        if not self._enabled or self._start_time is None:
+            return False
+        return time.time() - self._start_time >= self._interval
+
+    def timeout(self) -> bool:
+        if self.expired:
+            EventLoop.add_event(f'{self.name}.timeout')
+            self.start(int(self._interval))
 
 
 class Accel(SchemeComponent):
@@ -2742,7 +2806,7 @@ class StateMachineResult:
 
 
 def run_state_machine(sm: StateMachine,
-                      signals: list, timeout_sec: float = 10.0) -> StateMachineResult:
+                      signals: list, timeout_sec: float = 100000.0) -> StateMachineResult:
     """
     Запускает машину состояний на основе CGML XML и списка сигналов.
     Возвращает StateMachineResult: был ли выход по таймауту, список сигналов, компоненты.
@@ -2760,6 +2824,11 @@ def run_state_machine(sm: StateMachine,
         if time.time() - start_time > timeout_sec:
             timeout = True
             break
+        # Execute loop_actions for each component
+        for component in sm.components.values():
+            if hasattr(component.obj, 'loop_actions'):
+                component.obj.loop_actions()
+
         event = EventLoop.get_event()
         if event is None or event == 'break':
             break
