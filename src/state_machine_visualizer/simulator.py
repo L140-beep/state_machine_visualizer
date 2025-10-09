@@ -977,7 +977,7 @@ class Eyes(SchemeComponent):
     def __init__(self, name: str, pin: int = 2):
         super().__init__(name)
         self.is_left = pin == 2  # Пин 2 - левый глаз, Пин 1 - правый глаз
-        self.bear = None
+        self.bear: CyberBear | None = None
         self.pin = pin
 
     def get_sm_options(self, options: dict):
@@ -1061,22 +1061,45 @@ class Matrix(SchemeComponent):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._pixels = [[0 for _ in range(7)] for _ in range(5)]
+        self.bear: CyberBear | None = None
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.bear = options.get('CyberBear')
+        if self.bear is None:
+            raise ValueError(
+                "CyberBear instance is required for Matrix component!")
 
     def setPixel(self, row: int, col: int, brightness: int):
+        if self.bear is None:
+            return
         if 0 <= row < 5 and 0 <= col < 7:
-            self._pixels[row][col] = brightness
+            self.bear.set_matrix_pixel(row, col, brightness)
 
     def setPattern(self, pattern):
-        # Установка шаблона на матрицу
-        pass
+        if self.bear is None:
+            return
+        # Предполагается, что pattern - это список списков 5x7
+        for row in range(5):
+            for col in range(7):
+                if row < len(pattern) and col < len(pattern[row]):
+                    self.bear.set_matrix_pixel(row, col, pattern[row][col])
 
     def changePatternBright(self, mode: str, brightness: int):
-        # Изменение яркости по режиму (OFF_LEDS/ON_LEDS/ALL_LEDS)
-        pass
+        if self.bear is None:
+            return
+        for row in range(5):
+            for col in range(7):
+                current = self.bear.get_matrix_pixel(row, col)
+                if mode == "ALL_LEDS" or \
+                   (mode == "ON_LEDS" and current > 0) or \
+                   (mode == "OFF_LEDS" and current == 0):
+                    self.bear.set_matrix_pixel(row, col, brightness)
 
     def clear(self):
-        self._pixels = [[0 for _ in range(7)] for _ in range(5)]
+        if self.bear is None:
+            return
+        self.bear.clear_matrix()
 
 
 class MatrixMask(SchemeComponent):
@@ -1084,20 +1107,35 @@ class MatrixMask(SchemeComponent):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self._mask = [[0 for _ in range(7)] for _ in range(5)]
+        self.bear: CyberBear | None = None
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.bear = options.get('CyberBear')
+        if self.bear is None:
+            raise ValueError(
+                "CyberBear instance is required for MatrixMask component!")
 
     def maskPixel(self, row: int, col: int, value: int, op: str):
+        if self.bear is None:
+            return
         if 0 <= row < 5 and 0 <= col < 7:
+            current = self.bear.get_matrix_pixel(row, col)
             if op == "AND":
-                self._mask[row][col] &= value
+                self.bear.set_matrix_pixel(row, col, current & value)
             elif op == "OR":
-                self._mask[row][col] |= value
+                self.bear.set_matrix_pixel(row, col, current | value)
             elif op == "XOR":
-                self._mask[row][col] ^= value
+                self.bear.set_matrix_pixel(row, col, current ^ value)
 
     def maskPattern(self, pattern, op: str):
-        # Применение маски с операцией к шаблону
-        pass
+        if self.bear is None:
+            return
+        # Предполагается, что pattern - это список списков 5x7
+        for row in range(5):
+            for col in range(7):
+                if row < len(pattern) and col < len(pattern[row]):
+                    self.maskPixel(row, col, pattern[row][col], op)
 
 
 class MatrixAnimation(SchemeComponent):
