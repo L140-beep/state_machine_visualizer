@@ -729,8 +729,406 @@ def PASS_EVENT_TO(obj: QHsm, e: str) -> None:
 # ============================================================================
 # COMPONENTS.PY
 # ============================================================================
+class SchemeComponent(ABC):
+    def __init__(self, name: str):
+        self.name = name
+
+    def get_sm_options(self, options: dict):
+        ...
+        # raise NotImplementedError("This method should be overridden in subclasses")
 
 # Все классы компонентов кладутся сюда
+
+
+class Accel(SchemeComponent):
+    """Компонент для определения положения."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.orientation = 0
+        self.ACCEL_DIR_DN = 1  # На ушах
+        self.ACCEL_DIR_UP = 2  # На ногах
+        self.ACCEL_DIR_LEFT = 3  # На левом боку
+        self.ACCEL_DIR_RIGHT = 4  # На правом боку
+        self.ACCEL_DIR_FACE = 5  # На спине
+        self.ACCEL_DIR_BACK = 6  # На животе
+
+    def isOrientationChanged(self):
+        # Событие когда положение меняется
+        EventLoop.add_event(f'{self.name}.isOrientationChanged')
+
+
+class Button(SchemeComponent):
+    """Компонент кнопки."""
+
+    def __init__(self, name: str, pin: int = 1):
+        super().__init__(name)
+        self.pin = pin
+        self.value = 0
+        self._pressed = False
+        self._released = False
+        self._clicked = False
+
+    def isPressed(self):
+        if self._pressed:
+            EventLoop.add_event(f'{self.name}.isPressed')
+            return True
+        return False
+
+    def isReleased(self):
+        if self._released:
+            EventLoop.add_event(f'{self.name}.isReleased')
+            return True
+        return False
+
+    def clicked(self):
+        if self._clicked:
+            EventLoop.add_event(f'{self.name}.clicked')
+            return True
+        return False
+
+
+class Speaker(SchemeComponent):
+    """Компонент пищалки."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._playing = False
+
+    def isNoteEnd(self):
+        if not self._playing:
+            EventLoop.add_event(f'{self.name}.isNoteEnd')
+            return True
+        return False
+
+    def setupNote(self, note: str, amplitude: int, time: int):
+        pass
+
+    def setupFrequency(self, freq: int, amplitude: int, time: int):
+        pass
+
+    def play(self):
+        self._playing = True
+
+    def stop(self):
+        self._playing = False
+
+
+class SpeakerSound(SchemeComponent):
+    """Компонент для готовых звуков."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._playing = False
+
+    def isSoundEnd(self):
+        if not self._playing:
+            EventLoop.add_event(f'{self.name}.isSoundEnd')
+            return True
+        return False
+
+    def setupSound(self, sound: str, time: int):
+        pass
+
+    def play(self):
+        self._playing = True
+
+    def stop(self):
+        self._playing = False
+
+
+class PhotoDiode(SchemeComponent):
+    """Компонент ИК-фотодиода (нос)."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.value = 0
+        self.threshold = 0
+        self._enabled = True
+
+    def isThresholdValue(self):
+        if self._enabled and self.value >= self.threshold:
+            EventLoop.add_event(f'{self.name}.isThresholdValue')
+            return True
+        return False
+
+    def setupEvent(self, threshold: int):
+        self.threshold = threshold
+
+    def off(self):
+        self._enabled = False
+
+    def on(self):
+        self._enabled = True
+
+    def get_sm_options(self, options: dict):
+        self.threshold = options.get('photodiode_threshold', self.threshold)
+
+
+class Eyes(SchemeComponent):
+    """Компонент светодиодных глаз."""
+
+    def __init__(self, name: str, pin: int = 1):
+        super().__init__(name)
+        self.pin = pin
+        self._color = [0, 0, 0, 0]  # RGBK
+
+    def setColorPalette(self, color: str):
+        # Здесь можно добавить предопределенные цвета
+        pass
+
+    def setColor(self, r: int, g: int, b: int, k: int):
+        self._color = [r, g, b, k]
+
+    def off(self):
+        self._color = [0, 0, 0, 0]
+
+
+class Microphone(SchemeComponent):
+    """Компонент микрофона."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.value = 0
+        self._threshold = 0
+        self._cooldown = 0
+        self._enabled = True
+
+    def isLoudSound(self):
+        if self._enabled and self.value >= self._threshold:
+            EventLoop.add_event(f'{self.name}.isLoudSound')
+            return True
+        return False
+
+    def setCooldown(self, interval: int):
+        self._cooldown = interval
+
+    def setupEvent(self, volume: int):
+        self._threshold = volume
+
+    def off(self):
+        self._enabled = False
+
+    def on(self):
+        self._enabled = True
+
+    def get_sm_options(self, options: dict):
+        self.value = options.get('microphone_value', self.value)
+
+
+class IR(SchemeComponent):
+    """Компонент ИК-светодиода."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._enabled = False
+
+    def on(self):
+        self._enabled = True
+
+    def off(self):
+        self._enabled = False
+
+
+class Matrix(SchemeComponent):
+    """Компонент матрицы светодиодов."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._pixels = [[0 for _ in range(7)] for _ in range(5)]
+
+    def setPixel(self, row: int, col: int, brightness: int):
+        if 0 <= row < 5 and 0 <= col < 7:
+            self._pixels[row][col] = brightness
+
+    def setPattern(self, pattern):
+        # Установка шаблона на матрицу
+        pass
+
+    def changePatternBright(self, mode: str, brightness: int):
+        # Изменение яркости по режиму (OFF_LEDS/ON_LEDS/ALL_LEDS)
+        pass
+
+    def clear(self):
+        self._pixels = [[0 for _ in range(7)] for _ in range(5)]
+
+
+class MatrixMask(SchemeComponent):
+    """Компонент для масок матрицы."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._mask = [[0 for _ in range(7)] for _ in range(5)]
+
+    def maskPixel(self, row: int, col: int, value: int, op: str):
+        if 0 <= row < 5 and 0 <= col < 7:
+            if op == "AND":
+                self._mask[row][col] &= value
+            elif op == "OR":
+                self._mask[row][col] |= value
+            elif op == "XOR":
+                self._mask[row][col] ^= value
+
+    def maskPattern(self, pattern, op: str):
+        # Применение маски с операцией к шаблону
+        pass
+
+
+class MatrixAnimation(SchemeComponent):
+    """Компонент для анимации матрицы."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._animation_finished = False
+
+    def AnimationFinished(self):
+        if self._animation_finished:
+            EventLoop.add_event(f'{self.name}.AnimationFinished')
+            return True
+        return False
+
+    def setFrame(self, pattern, time: int):
+        # Установка кадра анимации
+        pass
+
+
+class MatrixPicture(SchemeComponent):
+    """Компонент для готовых картинок на матрице."""
+    pictures = {
+        "picture1": [
+            # TODO КАРТИНКи
+        ],
+        "picture2": [
+            # TODO КАРТИНКи
+        ]
+    }
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._current_picture = None
+
+    def draw(self, picture: str):
+        self._current_picture = picture
+
+
+class Random(SchemeComponent):
+    """Компонент генератора случайных чисел."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.value = 0  # Со знаком
+        self.uValue = 0  # Без знака
+        self._seed = None
+
+    def setSeed(self, seed: int):
+        self._seed = seed
+        random.seed(seed)
+
+    def doRandom(self):
+        self.value = random.randint(-2147483648, 2147483647)
+        self.uValue = random.randint(0, 4294967295)
+
+    def doRangeRandom(self, start: int, end: int):
+        self.value = random.randint(start, end-1)
+        self.uValue = self.value if self.value >= 0 else 0
+
+
+class CalcInt(SchemeComponent):
+    """Компонент калькулятора целых чисел."""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.value = 0
+
+    def set(self, value: int):
+        self.value = value
+
+    def add(self, x: int):
+        try:
+            result = self.value + x
+            if -2147483648 <= result <= 2147483647:
+                self.value = result
+            else:
+                EventLoop.add_event(f'{self.name}.isOverflow')
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def sub(self, x: int):
+        try:
+            result = self.value - x
+            if -2147483648 <= result <= 2147483647:
+                self.value = result
+            else:
+                EventLoop.add_event(f'{self.name}.isOverflow')
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def mul(self, x: int):
+        try:
+            result = self.value * x
+            if -2147483648 <= result <= 2147483647:
+                self.value = result
+            else:
+                EventLoop.add_event(f'{self.name}.isOverflow')
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def div(self, x: int):
+        if x == 0:
+            EventLoop.add_event(f'{self.name}.isZeroDivision')
+        else:
+            self.value //= x
+
+    def mod(self, x: int):
+        if x == 0:
+            EventLoop.add_event(f'{self.name}.isZeroDivision')
+        else:
+            self.value %= x
+
+    def neg(self):
+        try:
+            result = -self.value
+            if -2147483648 <= result <= 2147483647:
+                self.value = result
+            else:
+                self._overflow = True
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def abs(self):
+        try:
+            result = abs(self.value)
+            if result <= 2147483647:
+                self.value = result
+            else:
+                self._overflow = True
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def bitAnd(self, x: int):
+        self.value &= x
+
+    def bitOr(self, x: int):
+        self.value |= x
+
+    def bitXor(self, x: int):
+        self.value ^= x
+
+    def bitNot(self):
+        self.value = ~self.value
+
+    def shiftLeft(self, n: int):
+        try:
+            result = self.value << n
+            if -2147483648 <= result <= 2147483647:
+                self.value = result
+            else:
+                EventLoop.add_event(f'{self.name}.isOverflow')
+        except OverflowError:
+            EventLoop.add_event(f'{self.name}.isOverflow')
+
+    def shiftRight(self, n: int):
+        self.value >>= n
 
 # Компонент Считыватель:
 # Действие «Принять символ»
@@ -749,15 +1147,6 @@ def PASS_EVENT_TO(obj: QHsm, e: str) -> None:
 # Действие «Уменьшить»
 # Действие «Очистить»
 # Атрибут «Значение»
-
-
-class SchemeComponent(ABC):
-    def __init__(self, name: str):
-        self.name = name
-
-    def get_sm_options(self, options: dict):
-        ...
-        # raise NotImplementedError("This method should be overridden in subclasses")
 
 
 class Reader(SchemeComponent):
@@ -1248,22 +1637,6 @@ class Compass(SchemeComponent):
         if self.gardener is None:
             raise ValueError('Gardener is required for Compass work!')
         return self.gardener.orientation
-
-
-class LED:
-    def on(self):
-        print('on')
-
-    def off(self):
-        print('off')
-
-    def get_sm_options(self, options: dict):
-        ...
-
-
-class Timer:
-    def start(self, time: int):
-        print('timer started for', time)
 
 
 # ============================================================================

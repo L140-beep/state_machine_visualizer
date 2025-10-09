@@ -111,16 +111,13 @@ class MainApp(tk.Tk):
                     current_platform = None
                     if self.current_visualizer and hasattr(self.current_visualizer, 'state_machine_data'):
                         current_platform = self.current_visualizer.state_machine_data.get(
-                            'platform'
-                        )
+                            'platform')
                     if current_platform and str(current_platform).lower() == str(platform).lower():
                         print(
-                            f"Платформа совпадает ({platform}), обновляем данные визуализатора."
-                        )
+                            f"Платформа совпадает ({platform}), обновляем данные визуализатора.")
                         if hasattr(self.current_visualizer, 'update_state_machine_data'):
                             self.current_visualizer.update_state_machine_data(
-                                self.state_machine_data
-                            )
+                                self.state_machine_data)
                         self.file_path.set(file_path)
                         self.enable_buttons()
                         return
