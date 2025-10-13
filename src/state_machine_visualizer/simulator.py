@@ -1575,6 +1575,12 @@ class Sensor(SchemeComponent):
         return self.gardener.wall_back_value
 
     @property
+    def wall_left(self):
+        if self.gardener is None:
+            raise ValueError('Gardener is required for Compass work!')
+        return self.gardener.wall_left_value
+
+    @property
     def wall_straight(self):
         if self.gardener is None:
             raise ValueError('Gardener is required for Compass work!')
@@ -1584,7 +1590,7 @@ class Sensor(SchemeComponent):
     def wall_right(self):
         if self.gardener is None:
             raise ValueError('Gardener is required for Compass work!')
-        return self.gardener.wall_right
+        return self.gardener.wall_right_value
 
     @property
     def north(self):
@@ -1649,7 +1655,6 @@ class Flower(SchemeComponent):
         self.gardener = gardener
 
     def plant(self, flower: int):
-        from pprint import pprint
         if self.gardener is None:
             raise ValueError('Gardener is None!')
         # print('---------')
@@ -2575,8 +2580,6 @@ class ChoiceState(Element):
         if signal_name == 'entry':
             EventLoop.add_event('noconditionTransition')
             return Q_HANDLED()
-            if self.parent:
-                return Q_SUPER(qhsm, self.sm.states[self.parent].execute_signal)
         else_signal = None
         if signal_name == 'noconditionTransition':
             for signal in self.conditions:

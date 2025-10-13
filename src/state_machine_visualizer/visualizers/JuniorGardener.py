@@ -351,7 +351,8 @@ class JuniorGardenerVisualizer(BaseVisualizer):
 
             sm = StateMachine(cgml_sm, sm_parameters={'gardener': gardener})
             print(
-                f"Запускаю машину состояний с Gardener (поле {self.width}x{self.height})")
+                f"Запускаю машину состояний с Gardener (поле {self.width}x{self.height})"
+            )
             result = run_state_machine(sm, [], timeout_sec=1000.0)
             self.current_gardener = gardener
             # сохраняем поле результата отдельно

@@ -189,7 +189,6 @@ class MainApp(tk.Tk):
         try:
             # Запускаем машину состояний через визуализатор
             result = self.current_visualizer.run_state_machine()
-
             if result:
                 # Обновляем отображение через функцию визуализатора
                 self.current_visualizer.update_with_result(result)
