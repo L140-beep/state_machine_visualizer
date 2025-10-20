@@ -102,8 +102,11 @@ class JuniorReaderVisualizer(BaseVisualizer):
         except (ValueError, TypeError) as e:
             print(f"Ошибка при применении настроек: {e}")
 
-    def run_state_machine(self):
-        """Запускает машину состояний и возвращает результат с актуальными настройками."""
+    def run_state_machine(self) -> None | StateMachineResult:
+        return self._start_simulation()
+
+    def _start_simulation(self):
+        """Запускает симуляцию машины состояний."""
         try:
             # Получаем настройки для чтения из self.settings
             settings = getattr(self, 'settings', self.get_settings())

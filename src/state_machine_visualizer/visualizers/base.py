@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
+import threading
 from state_machine_visualizer.simulator import StateMachineResult
+
 
 class BaseVisualizer(ABC):
     """Базовый класс для всех визуализаторов."""
+
     def __init__(self, parent, state_machine_data: Dict[str, Any]):
         self.parent = parent
         self.state_machine_data = state_machine_data
@@ -32,8 +35,13 @@ class BaseVisualizer(ABC):
         """Применяет настройки к визуализатору."""
         pass
 
-    def run_state_machine(self):
-        """Запускает машину состояний и возвращает результат."""
-        # Базовая реализация - возвращает None
-        # Должна быть переопределена в конкретных визуализаторах
-        return None
+    @abstractmethod
+    def _start_simulation(self) -> None | StateMachineResult:
+        """Запускает симуляцию машины состояний. Должна быть реализована в конкретных визуализаторах."""
+        pass
+
+    def run_state_machine(self) -> None | StateMachineResult:
+        """Запускает машину состояний в отдельном потоке."""
+        thread = threading.Thread(target=self._start_simulation)
+        thread.daemon = True  # Поток завершится при закрытии программы
+        thread.start()

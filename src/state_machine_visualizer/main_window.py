@@ -201,11 +201,8 @@ class MainApp(tk.Tk):
                 else:
                     messagebox.showinfo(
                         "Симуляция", "Симуляция завершена! Отображение обновлено.")
-            else:
-                messagebox.showerror(
-                    "Ошибка", "Не удалось запустить симуляцию")
-
         except Exception as e:
+            print(e)
             messagebox.showerror(
                 "Ошибка", f"Ошибка при запуске симуляции:\n{str(e)}")
             print(f"Ошибка при запуске симуляции: {e}")

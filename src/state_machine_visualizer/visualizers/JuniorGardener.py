@@ -326,8 +326,11 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                 new_matrix[row][col] = self.editable_field[row][col]
         self.editable_field = new_matrix
 
-    def run_state_machine(self):
-        """Запускает машину состояний и возвращает результат."""
+    def run_state_machine(self) -> None | StateMachineResult:
+        return self._start_simulation()
+
+    def _start_simulation(self):
+        """Запускает симуляцию машины состояний."""
         try:
             gardener = Gardener(self.width, self.height)
             if self.orientation == "Север":
@@ -350,9 +353,6 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             gardener.set_field(self.editable_field)
 
             sm = StateMachine(cgml_sm, sm_parameters={'gardener': gardener})
-            print(
-                f"Запускаю машину состояний с Gardener (поле {self.width}x{self.height})"
-            )
             result = run_state_machine(sm, [], timeout_sec=1000.0)
             self.current_gardener = gardener
             # сохраняем поле результата отдельно

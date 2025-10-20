@@ -6,7 +6,17 @@ from copy import deepcopy
 import ast
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Union, DefaultDict, Literal,  TypeVar, Any, Callable
+from typing import (
+    List,
+    Dict,
+    Optional,
+    Union,
+    DefaultDict,
+    Literal,
+    TypeVar,
+    Any,
+    Callable
+)
 from collections import defaultdict
 import random
 from collections import deque
@@ -756,18 +766,36 @@ class CyberBear:
         # Матрица светодиодов 5x7
         self.matrix = [[0 for _ in range(7)] for _ in range(5)]
 
+        # Callback для обновления визуализации
+        self.on_state_changed: Callable[[], None] | None = None
+
     def set_left_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет левого глаза."""
         self.left_eye = [r, g, b, k]
+        if self.on_state_changed:
+            print('change left')
+            self.on_state_changed()
 
     def set_right_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет правого глаза."""
         self.right_eye = [r, g, b, k]
+        if self.on_state_changed:
+            print('change right')
+            self.on_state_changed()
 
     def set_matrix_pixel(self, row: int, col: int, value: int):
         """Установить значение пикселя матрицы."""
         if 0 <= row < 5 and 0 <= col < 7:
             self.matrix[row][col] = value
+
+    def set_pattern(self, pattern: list[int]):
+        """Установить шаблон на матрицу из одномерного списка."""
+        if len(pattern) != 35:  # 5x7 = 35 элементов
+            raise ValueError("Pattern must contain exactly 35 elements")
+        for i in range(35):
+            row = i // 7  # Целочисленное деление даст номер строки
+            col = i % 7   # Остаток от деления даст номер столбца
+            self.set_matrix_pixel(row, col, pattern[i])
 
     def get_matrix_pixel(self, row: int, col: int) -> int:
         """Получить значение пикселя матрицы."""
@@ -793,10 +821,13 @@ class Timer(SchemeComponent):
         self._start_time = None
         self._interval = 0
         self._enabled = True
+        self.millis = 0
 
     def start(self, interval: int):
         """Start timer with given interval in milliseconds."""
         if self._enabled:
+            print('start!')
+            self.millis = interval
             self._interval = interval / 1000.0  # Convert to seconds
             self._start_time = time.time()
 
@@ -840,10 +871,13 @@ class Timer(SchemeComponent):
             return False
         return time.time() - self._start_time >= self._interval
 
-    def timeout(self) -> bool:
+    def timeout(self) -> None:
         if self.expired:
             EventLoop.add_event(f'{self.name}.timeout')
-            self.start(int(self._interval))
+            self.start(int(self.millis))
+
+    def loop_actions(self):
+        self.timeout()
 
 
 class Accel(SchemeComponent):
@@ -974,40 +1008,67 @@ class PhotoDiode(SchemeComponent):
 class Eyes(SchemeComponent):
     """Компонент светодиодных глаз."""
 
+    colors: dict[str, tuple[int, int, int, int]] = {
+        "&ColorRed": (14, 0, 0, 0),
+        "&ColorReddish": (1, 0, 0, 50),
+        "&ColorOrange": (21, 1, 0, 0),
+        "&ColorGreen": (0, 10, 0, 0),
+        "&ColorLime": (6, 4, 0, 0),
+        "&ColorBlue": (0, 0, 20, 0),
+        "&ColorCyan": (0, 12, 10, 0),
+        "&ColorPink": (10, 0, 2, 0),
+        "&ColorPurple": (6, 0, 10, 0),
+        "&ColorYellow": (10,  2,  0,  0),
+        "&ColorWhite": (15, 4, 1, 0),
+        "&ColorBlack": (0, 0, 0, 99),
+        "&ColorPerfectWhite": (10, 10, 10, 0)
+    }
+
     def __init__(self, name: str, pin: int = 2):
         super().__init__(name)
         self.is_left = pin == 2  # Пин 2 - левый глаз, Пин 1 - правый глаз
-        self.bear: CyberBear | None = None
+        self.__bear: CyberBear | None = None
         self.pin = pin
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте Eyes')
+        return self.__bear
 
     def get_sm_options(self, options: dict):
         """Инициализация компонента с параметрами из state machine."""
-        self.bear = options.get('CyberBear')
-        if self.bear is None:
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
             raise ValueError(
                 "CyberBear instance is required for Eyes component!")
 
     def setColorPalette(self, color: str):
-        # Здесь можно добавить предопределенные цвета
-        pass
+        rgbk_color = self.colors.get(color)
+        if rgbk_color is None:
+            return
+        r, g, b, k = rgbk_color
+        if self.pin == 2:
+            self.bear.set_left_eye(r, g, b, k)
+        elif self.pin == 1:
+            self.bear.set_right_eye(r, g, b, k)
+        print(f"зажгли цветом {color}")
 
     def setColor(self, r: int, g: int, b: int, k: int):
-        if self.bear is None:
-            return
         # Пин 1 - правый глаз, Пин 2 - левый глаз
         if self.pin == 2:
             self.bear.set_left_eye(r, g, b, k)
         elif self.pin == 1:
             self.bear.set_right_eye(r, g, b, k)
+        print(f"зажгли цветом {r,g,b,k}")
 
     def off(self):
-        if self.bear is None:
-            return
         # Пин 1 - правый глаз, Пин 2 - левый глаз
         if self.pin == 2:
-            self.bear.left_eye = [0, 0, 0, 0]
+            self.bear.set_left_eye(0, 0, 0, 0)
         elif self.pin == 1:
             self.bear.right_eye = [0, 0, 0, 0]
+        print(f"выключены")
 
 
 class Microphone(SchemeComponent):
@@ -1061,33 +1122,39 @@ class Matrix(SchemeComponent):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.bear: CyberBear | None = None
+        self.__bear: CyberBear | None = None
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте Matrix')
+        return self.__bear
 
     def get_sm_options(self, options: dict):
         """Инициализация компонента с параметрами из state machine."""
-        self.bear = options.get('CyberBear')
-        if self.bear is None:
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
             raise ValueError(
                 "CyberBear instance is required for Matrix component!")
 
     def setPixel(self, row: int, col: int, brightness: int):
-        if self.bear is None:
-            return
         if 0 <= row < 5 and 0 <= col < 7:
             self.bear.set_matrix_pixel(row, col, brightness)
+        else:
+            raise Exception('Matrix - out of bounds!')
 
-    def setPattern(self, pattern):
+    def setPattern(self, pattern: list[int]):
+        """Установить шаблон на матрицу.
+
+        Args:
+            pattern: Одномерный список из 35 элементов (5 строк x 7 столбцов)
+        """
         if self.bear is None:
             return
-        # Предполагается, что pattern - это список списков 5x7
-        for row in range(5):
-            for col in range(7):
-                if row < len(pattern) and col < len(pattern[row]):
-                    self.bear.set_matrix_pixel(row, col, pattern[row][col])
+        self.bear.set_pattern(pattern)
+        print(f'Установлен паттерн на матрице {pattern}')
 
     def changePatternBright(self, mode: str, brightness: int):
-        if self.bear is None:
-            return
         for row in range(5):
             for col in range(7):
                 current = self.bear.get_matrix_pixel(row, col)
@@ -1097,8 +1164,6 @@ class Matrix(SchemeComponent):
                     self.bear.set_matrix_pixel(row, col, brightness)
 
     def clear(self):
-        if self.bear is None:
-            return
         self.bear.clear_matrix()
 
 
@@ -1107,18 +1172,22 @@ class MatrixMask(SchemeComponent):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.bear: CyberBear | None = None
+        self.__bear: CyberBear | None = None
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте Matrix')
+        return self.__bear
 
     def get_sm_options(self, options: dict):
         """Инициализация компонента с параметрами из state machine."""
-        self.bear = options.get('CyberBear')
-        if self.bear is None:
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
             raise ValueError(
                 "CyberBear instance is required for MatrixMask component!")
 
     def maskPixel(self, row: int, col: int, value: int, op: str):
-        if self.bear is None:
-            return
         if 0 <= row < 5 and 0 <= col < 7:
             current = self.bear.get_matrix_pixel(row, col)
             if op == "AND":
@@ -1129,13 +1198,13 @@ class MatrixMask(SchemeComponent):
                 self.bear.set_matrix_pixel(row, col, current ^ value)
 
     def maskPattern(self, pattern, op: str):
-        if self.bear is None:
-            return
         # Предполагается, что pattern - это список списков 5x7
         for row in range(5):
             for col in range(7):
                 if row < len(pattern) and col < len(pattern[row]):
                     self.maskPixel(row, col, pattern[row][col], op)
+        print(pattern)
+# TODO: Матрица анимация
 
 
 class MatrixAnimation(SchemeComponent):
@@ -1158,21 +1227,96 @@ class MatrixAnimation(SchemeComponent):
 
 class MatrixPicture(SchemeComponent):
     """Компонент для готовых картинок на матрице."""
-    pictures = {
-        "picture1": [
-            # TODO КАРТИНКи
+    pictures: dict[str, list[int]] = {
+        "heart": [
+            0, 0, 0, 0, 0,
+            0, 100, 0, 100, 0,
+            100, 100, 100, 100, 100,
+            100, 100, 100, 100, 100,
+            0, 100, 100, 100, 0,
+            0, 0, 100, 0, 0,
+            0, 0, 0, 0, 0,
         ],
-        "picture2": [
-            # TODO КАРТИНКи
+        "note": [
+            0, 0, 0, 0, 0,
+            0, 0, 100, 0, 0,
+            0, 0, 100, 100, 0,
+            0, 0, 100, 0, 100,
+            100, 100, 100, 0, 0,
+            100, 100, 100, 0, 0,
+            0, 0, 0, 0, 0,
+        ],
+        "smile": [
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 100, 0, 100, 0,
+            0, 0, 0, 0, 0,
+            100, 0, 0, 0, 100,
+            0, 100, 100, 100, 0,
+            0, 0, 0, 0, 0,
+        ],
+        "sadness": [
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 100, 0, 100, 0,
+            0, 0, 0, 0, 0,
+            0, 100, 100, 100, 0,
+            100, 0, 0, 0, 100,
+            0, 0, 0, 0, 0,
+        ],
+        "cross": [
+            0, 0, 0, 0, 0,
+            100, 0, 0, 0, 100,
+            0, 100, 0, 100, 0,
+            0, 0, 100, 0, 0,
+            0, 100, 0, 100, 0,
+            100, 0, 0, 0, 100,
+            0, 0, 0, 0, 0,
+        ],
+        "square": [
+            100, 100, 100, 100, 100,
+            100, 0, 0, 0, 100,
+            100, 0, 0, 0, 100,
+            100, 0, 0, 0, 100,
+            100, 0, 0, 0, 100,
+            100, 0, 0, 0, 100,
+            100, 100, 100, 100, 100,
+        ],
+        "rhombus": [
+            0, 0, 0, 0, 0,
+            0, 0, 100, 0, 0,
+            0, 100, 0, 100, 0,
+            100, 0, 0, 0, 100,
+            0, 100, 0, 100, 0,
+            0, 0, 100, 0, 0,
+            0, 0, 0, 0, 0,
         ]
     }
 
     def __init__(self, name: str):
         super().__init__(name)
         self._current_picture = None
+        self.__bear: CyberBear | None = None
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
+            raise ValueError(
+                "CyberBear instance is required for MatrixPicture component!")
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте Matrix')
+        return self.__bear
 
     def draw(self, picture: str):
-        self._current_picture = picture
+        pattern = self.pictures.get(picture)
+        if pattern is None:
+            return
+        self.bear.set_pattern(pattern)
+        print(f'Draw {picture}')
 
 
 class Random(SchemeComponent):
@@ -2486,6 +2630,75 @@ class StateMachine:
         # Если не найден оператор, просто сравниваем на True
         return bool(condition)
 
+    def __parse_args(self, args_str: str) -> list:
+        """
+        Парсит строку аргументов, учитывая сложные структуры в фигурных скобках.
+
+        Примеры:
+        "1, 2, 3" -> [1, 2, 3]
+        "{1, 2, 3}, 4" -> [[1, 2, 3], 4]
+        "text, {1, 2}, 3" -> ["text", [1, 2], 3]
+
+        Args:
+            args_str: Строка с аргументами
+
+        Returns:
+            Список распарсенных аргументов
+        """
+        def parse_set(set_str: str) -> list:
+            """Парсит содержимое фигурных скобок в список."""
+            # Убираем фигурные скобки и разбиваем по запятым
+            content = set_str[1:-1].strip()
+            if not content:
+                return []
+            return [parse_value(x.strip()) for x in content.split(',')]
+
+        def parse_value(val: str) -> Any:
+            """Парсит отдельное значение, пытаясь преобразовать его в число."""
+            val = val.strip()
+            # Если это множество в фигурных скобках
+            if val.startswith('{') and val.endswith('}'):
+                return parse_set(val)
+            # Пытаемся преобразовать в число
+            try:
+                if '.' in val:
+                    return float(val)
+                return int(val)
+            except ValueError:
+                return val
+
+        def split_args(args_str: str) -> list:
+            """Разбивает строку на аргументы с учетом вложенных структур."""
+            result = []
+            current = []
+            nesting_level = 0
+
+            for char in args_str:
+                if char == '{':
+                    nesting_level += 1
+                    current.append(char)
+                elif char == '}':
+                    nesting_level -= 1
+                    current.append(char)
+                elif char == ',' and nesting_level == 0:
+                    result.append(''.join(current).strip())
+                    current = []
+                else:
+                    current.append(char)
+
+            if current:
+                result.append(''.join(current).strip())
+
+            return result
+
+        if not args_str:
+            return []
+
+        # Разбиваем строку на аргументы
+        args = split_args(args_str)
+        # Парсим каждый аргумент
+        return [parse_value(arg) for arg in args]
+
     def __parse_action(self, actions: str) -> list:
         """
         Парсит строку или строки вида
@@ -2497,26 +2710,28 @@ class StateMachine:
             action = action.strip()
             if not action:
                 continue
-            pattern = r'^(?P<component>\w+)\.(?P<method>\w+)\((?P<args>.*)\)$'
+            pattern = r'^(?P<component>\w+)\.(?P<method>\w+)\((?P<args>.*)\)'
             match = re.match(pattern, action)
             if not match:
                 raise ValueError(f"Invalid action format: {action}")
             component = match.group('component')
             method = match.group('method')
             args_str = match.group('args').strip()
-            if args_str:
-                args = [arg.strip() for arg in re.split(r',\s*', args_str)]
-            else:
-                args = []
+            args = self.__parse_args(args_str) if args_str else []
             result.append(Action(
                 component=component, action=method, args=args))
         return result
 
     def intepreter_action(self, action: str):
         def resolve(val):
+            if isinstance(val, list):
+                return val
+            elif isinstance(val, int):
+                return val
+
             try:
                 return float(val) if '.' in val else int(val)
-            except ValueError:
+            except Exception as e:
                 # Попытка получить значение из компонента
                 if '.' in val:
                     comp_name, attr = val.split('.', 1)
@@ -2899,13 +3114,12 @@ def find_highest_level_initial_state(
     return None
 
 
+@dataclass
 class StateMachineResult:
-    def __init__(self, timeout: bool, signals: list, called_signals: list, components: dict):
-        self.timeout = timeout  # Закончилась ли МС по таймауту
-        # Сигналы, которые были вызваны (с учетом сигналов по умолчанию)
-        self.signals = signals
-        self.called_signals = called_signals  # Все, что вызвано пользователем вручную
-        self.components = components  # компоненты и их состояния
+    timeout: bool
+    signals: list
+    called_signals: list
+    components: dict
 
 
 def run_state_machine(sm: StateMachine,
@@ -2924,16 +3138,14 @@ def run_state_machine(sm: StateMachine,
     timeout = False
     start_time = time.time()
     while True:
-        if time.time() - start_time > timeout_sec:
-            timeout = True
-            break
         # Execute loop_actions for each component
         for component in sm.components.values():
             if hasattr(component.obj, 'loop_actions'):
+
                 component.obj.loop_actions()
 
         event = EventLoop.get_event()
-        if event is None or event == 'break':
+        if event == 'break':
             break
         SIMPLE_DISPATCH(qhsm, event)
     return StateMachineResult(timeout, EventLoop.events, EventLoop.called_events, sm.components)
