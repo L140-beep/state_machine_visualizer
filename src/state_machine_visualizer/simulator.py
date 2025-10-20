@@ -763,8 +763,8 @@ class CyberBear:
         # Цвет правого глаза (RGBK)
         self.right_eye = [0, 0, 0, 0]
 
-        # Матрица светодиодов 5x7
-        self.matrix = [[0 for _ in range(7)] for _ in range(5)]
+        # Матрица светодиодов 7x5 (7 строк, 5 столбцов)
+        self.matrix = [[0 for _ in range(5)] for _ in range(7)]  # Создаем в правильном порядке: [rows][cols]
 
         # Callback для обновления визуализации
         self.on_state_changed: Callable[[], None] | None = None
@@ -773,35 +773,41 @@ class CyberBear:
         """Установить цвет левого глаза."""
         self.left_eye = [r, g, b, k]
         if self.on_state_changed:
-            print('change left')
             self.on_state_changed()
 
     def set_right_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет правого глаза."""
         self.right_eye = [r, g, b, k]
         if self.on_state_changed:
-            print('change right')
             self.on_state_changed()
 
     def set_matrix_pixel(self, row: int, col: int, value: int):
         """Установить значение пикселя матрицы."""
-        if 0 <= row < 5 and 0 <= col < 7:
+        if 0 <= row < 7 and 0 <= col < 5:
             self.matrix[row][col] = value
 
     def set_pattern(self, pattern: list[int]):
-        """Установить шаблон на матрицу из одномерного списка."""
-        if len(pattern) != 35:  # 5x7 = 35 элементов
+        """Установить шаблон на матрицу из одномерного списка.
+        Размер матрицы 7x5 (7 строк, 5 столбцов).
+        Паттерн приходит как одномерный массив из 35 элементов.
+        """
+        if len(pattern) != 35:  # 7x5 = 35 элементов
             raise ValueError("Pattern must contain exactly 35 elements")
+
+        # Конвертируем одномерный массив в двумерный построчно
         for i in range(35):
-            row = i // 7  # Целочисленное деление даст номер строки
-            col = i % 7   # Остаток от деления даст номер столбца
+            row = i // 5  # Получаем индекс строки (0-6)
+            col = i % 5   # Получаем индекс столбца (0-4)
             self.set_matrix_pixel(row, col, pattern[i])
+        
+        if self.on_state_changed:
+            self.on_state_changed()
 
     def get_matrix_pixel(self, row: int, col: int) -> int:
         """Получить значение пикселя матрицы."""
-        if 0 <= row < 5 and 0 <= col < 7:
+        if 0 <= row < 7 and 0 <= col < 5:
             return self.matrix[row][col]
-        return 0
+        raise Exception("Index is out of bounds!!")
 
     def clear_matrix(self):
         """Очистить матрицу."""
@@ -1052,7 +1058,6 @@ class Eyes(SchemeComponent):
             self.bear.set_left_eye(r, g, b, k)
         elif self.pin == 1:
             self.bear.set_right_eye(r, g, b, k)
-        print(f"зажгли цветом {color}")
 
     def setColor(self, r: int, g: int, b: int, k: int):
         # Пин 1 - правый глаз, Пин 2 - левый глаз
@@ -1067,7 +1072,7 @@ class Eyes(SchemeComponent):
         if self.pin == 2:
             self.bear.set_left_eye(0, 0, 0, 0)
         elif self.pin == 1:
-            self.bear.right_eye = [0, 0, 0, 0]
+            self.bear.set_right_eye(0, 0, 0, 0)
         print(f"выключены")
 
 

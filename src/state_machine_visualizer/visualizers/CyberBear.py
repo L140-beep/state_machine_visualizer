@@ -16,7 +16,7 @@ class CyberBearVisualizer(BaseVisualizer):
     def __init__(self, parent, state_machine_data: Dict[str, Any]):
         # Инициализируем атрибуты до вызова super().__init__,
         # так как оно вызывает create_initial_view
-        self.matrix_size = (5, 7)  # Размер матрицы светодиодов
+        self.matrix_size = (7, 5)  # Размер матрицы светодиодов
         self.pixel_size = 30  # Размер одного пикселя в пикселях
         self.matrix_pixels = []  # Хранит канвасы для пикселей матрицы
         self.left_eye = None  # Канвас для левого глаза
@@ -89,17 +89,13 @@ class CyberBearVisualizer(BaseVisualizer):
         g = min(255, max(0, int(g * k_factor * 16)))
         b = min(255, max(0, int(b * k_factor * 16)))
         color = f'#{r:02x}{g:02x}{b:02x}'
-        print(f"Converting RGBK {rgbk} to RGB color: {color}")
         return color
 
     def update_visualization(self):
         """Обновляет отображение при изменении состояния."""
         print("update_visualization called")
-        print("Left eye RGBK:", self.bear.left_eye)
-        print("Right eye RGBK:", self.bear.right_eye)
-
+        rows, cols = self.matrix_size
         if self.left_eye and self.right_eye:
-            print("Canvas exists")
             # Обновляем левый глаз
             left_color = self.rgbk_to_color(self.bear.left_eye)
             print("Left eye color:", left_color)
@@ -111,8 +107,8 @@ class CyberBearVisualizer(BaseVisualizer):
             self.right_eye.itemconfig('led', fill=right_color)
 
             # Обновляем матрицу светодиодов
-            for row in range(self.matrix_size[0]):
-                for col in range(self.matrix_size[1]):
+            for row in range(rows):
+                for col in range(cols):
                     brightness = self.bear.get_matrix_pixel(row, col)
                     # Преобразуем яркость (0-100) в оттенок серого
                     gray = int(brightness * 2.55)
