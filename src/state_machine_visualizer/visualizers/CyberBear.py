@@ -25,7 +25,9 @@ class CyberBearVisualizer(BaseVisualizer):
         self.matrix_pixels = []  # Хранит канвасы для пикселей матрицы
         self.left_eye = None  # Канвас для левого глаза
         self.right_eye = None  # Канвас для правого глаза
-        self.signals = []  # Хранит список сигналов
+        self.signals = []  # Хранит список всех сигналов
+        self.current_signal_index = 0  # Индекс текущего сигнала
+        self.prev_signal = None  # Предыдущий отправленный сигнал
         self.bear = CyberBear()
         self.signal_rows = []  # Хранит строки с сигналами в настройках
         # Словарь для преобразования отображаемых имен в реальные
@@ -65,13 +67,43 @@ class CyberBearVisualizer(BaseVisualizer):
         self.right_eye.create_oval(
             2, 2, eye_size-2, eye_size-2, fill='black', tags='led')
 
+        # Создаем фрейм для информации о байтах
+        bytes_info_frame = tk.Frame(self.widget)
+        bytes_info_frame.pack(pady=5)
+
+        # Метки для байтов
+        self.prev_byte_label = tk.Label(
+            bytes_info_frame,
+            text="Предыдущий байт: -"
+        )
+        self.prev_byte_label.pack()
+
+        self.current_byte_label = tk.Label(
+            bytes_info_frame,
+            text="Текущий байт: -"
+        )
+        self.current_byte_label.pack()
+
+        # Кнопки управления
+        buttons_frame = tk.Frame(self.widget)
+        buttons_frame.pack(pady=5)
+
+        # Кнопка отправки байта
+        self.send_byte_button = tk.Button(
+            buttons_frame,
+            text="▶ Отправить байт",
+            command=self.send_next_byte,
+            state='disabled'  # Изначально кнопка заблокирована
+        )
+        self.send_byte_button.pack(side=tk.LEFT, padx=5)
+
         # Кнопка остановки
         stop_button = tk.Button(
-            self.widget,
+            buttons_frame,
             text="⏹️ Остановить",
             command=self.stop_simulation
         )
-        stop_button.pack(pady=5)
+        stop_button.pack(side=tk.LEFT, padx=5)
 
         # Создаем матрицу светодиодов
         matrix_frame = tk.Frame(self.widget)
@@ -145,6 +177,8 @@ class CyberBearVisualizer(BaseVisualizer):
     def stop_simulation(self):
         """Останавливает выполнение машины состояний."""
         EventLoop.events.append('break')
+        # Блокируем кнопку отправки байта при остановке
+        self.send_byte_button.config(state='disabled')
 
     def get_settings(self):
         """Возвращает настройки визуализатора."""
@@ -309,28 +343,70 @@ class CyberBearVisualizer(BaseVisualizer):
 
         return widgets
 
+    def send_next_byte(self):
+        """Отправляет следующий байт в КиберМишку."""
+        if not self.signals:
+            return
+
+        if self.current_signal_index < len(self.signals):
+            # Получаем текущий сигнал
+            current_signal = self.signals[self.current_signal_index]
+
+            # Обновляем медведя
+            self.bear.signals = [deepcopy(current_signal)]
+
+            # Обновляем метки
+            if self.prev_signal:
+                prev_text = (
+                    f"Предыдущий байт: {self.prev_signal.type}="
+                    f"{self.prev_signal.value}"
+                )
+                self.prev_byte_label.config(text=prev_text)
+
+            curr_text = (
+                f"Текущий байт: {current_signal.type}="
+                f"{current_signal.value}"
+            )
+            self.current_byte_label.config(text=curr_text)
+
+            # Сохраняем текущий сигнал как предыдущий
+            self.prev_signal = current_signal
+
+            # Увеличиваем индекс
+            self.current_signal_index += 1
+
     def _start_simulation(self):
         """Запускает симуляцию машины состояний."""
         try:
+            # Сбрасываем индексы и сигналы
+            self.current_signal_index = 0
+            self.prev_signal = None
+            self.bear.signals = []
+
+            # Обновляем метки
+            self.prev_byte_label.config(text="Предыдущий байт: -")
+            self.current_byte_label.config(text="Текущий байт: -")
 
             # Создаем новый экземпляр CyberBear
             self.bear = CyberBear()
-
-            # Устанавливаем сигналы в bear
-            self.bear.signals = deepcopy(self.signals)
-
+            self.update_visualization()
+            print(self.bear.signals)
             # Устанавливаем callback
             self.bear.on_state_changed = self.update_visualization
 
             if not self.state_machine_data:
                 raise ValueError("Данные машины состояний не загружены")
 
+            # Разблокируем кнопку отправки байта
+            self.send_byte_button.config(state='normal')
+
             cgml_sm = self.state_machine_data.get('cgml_state_machine')
             if not cgml_sm:
                 raise ValueError("CGMLStateMachine не найден в данных")
 
             sm = StateMachine(cgml_sm, sm_parameters={'CyberBear': self.bear})
-            result = run_state_machine(sm, [], timeout_sec=1000.0)
+            result = run_state_machine(
+                sm, [], timeout_sec=1000.0, isInfinite=True)
 
             return result
 

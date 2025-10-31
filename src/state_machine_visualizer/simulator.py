@@ -805,8 +805,6 @@ class CyberBear:
         # Callback для обновления визуализации
         self.on_state_changed: Optional[Callable[[], None]] = None
         self.__signals: Optional[List[CyberBearSignal]] = []
-        self.__signals.append(CyberBearSignal('ir', 5))
-        self.__signals.append(CyberBearSignal('ears', 5))
 
     # Сравнить текущую матрицу с полученной
     def is_matrix_equal(self, matrix: list):
@@ -873,6 +871,7 @@ class CyberBear:
         Размер матрицы 7x5 (7 строк, 5 столбцов).
         Паттерн приходит как одномерный массив из 35 элементов.
         """
+        print('set pattern!')
         if len(pattern) != 35:  # 7x5 = 35 элементов
             raise ValueError("Pattern must contain exactly 35 elements")
 
