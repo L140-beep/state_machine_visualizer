@@ -3,7 +3,11 @@ from tkinter import ttk
 from typing import Dict, Any
 
 from state_machine_visualizer.visualizers.base import BaseVisualizer
-from state_machine_visualizer.simulator import StateMachineResult, run_state_machine, StateMachine
+from state_machine_visualizer.simulator import (
+    StateMachineResult,
+    run_state_machine,
+    StateMachine
+)
 
 
 class JuniorReaderVisualizer(BaseVisualizer):
@@ -23,6 +27,7 @@ class JuniorReaderVisualizer(BaseVisualizer):
         # Можно добавить обновление списка сигналов, если требуется
 
     def __init__(self, parent, state_machine_data: Dict[str, Any]):
+        self.message = 'Привет, мир!'
         super().__init__(parent, state_machine_data)
 
     def create_initial_view(self):
@@ -66,41 +71,52 @@ class JuniorReaderVisualizer(BaseVisualizer):
             widget.destroy()
         for i, signal in enumerate(signals):
             display_signal = signal_map.get(signal, signal)
-            label = ttk.Label(self.signals_list_frame, text=display_signal, font=(
-                "Consolas", 10), anchor="w", justify=tk.LEFT)
+            label = ttk.Label(
+                self.signals_list_frame,
+                text=display_signal or '',
+                font=("Consolas", 10),
+                anchor="w",
+                justify=tk.LEFT
+            )
             label.grid(row=i, column=0, sticky="w", padx=10, pady=2)
         self.signals_list_frame.update_idletasks()
         self.signals_list_frame.master.configure(
-            scrollregion=self.signals_list_frame.master.bbox("all"))
+            scrollregion=self.signals_list_frame.master.bbox("all")
+        )
 
     def get_settings(self):
         """Возвращает настройки визуализатора для окна настроек."""
-        if hasattr(self, 'settings') and self.settings:
-            return self.settings.copy()
         return {
-            "Сообщение для чтения": "Привет, мир!",
+            "Сообщение для чтения": self.message,
         }
 
-    def apply_settings(self, settings):
-        """Применяет настройки к визуализатору и сохраняет их в атрибутах экземпляра."""
+    def get_settings_values(self, widgets_dict: Dict[str, ttk.Widget]) -> Dict[str, Any]:
+        return {
+            'Сообщение для чтения': widgets_dict["Сообщение для чтения"].get(),
+        }
+
+    def apply_settings(self, settings: Dict[str, Any]):
+        """Применяет настройки к визуализатору
+          и сохраняет их в атрибутах экземпляра."""
         try:
-            self.settings = settings.copy()
-            # Пример: обновление размера шрифта
-            if "Размер шрифта" in settings:
-                font_size = int(settings["Размер шрифта"])
-                if hasattr(self, 'widget'):
-                    for child in self.widget.winfo_children():
-                        if isinstance(child, ttk.Label):
-                            current_font = child.cget("font")
-                            if isinstance(current_font, str):
-                                new_font = ("Consolas", font_size)
-                            else:
-                                new_font = list(current_font)
-                                new_font[1] = font_size
-                                new_font = tuple(new_font)
-                            child.configure(font=new_font)
+            self.message = settings.get("Сообщение для чтения", self.message)
         except (ValueError, TypeError) as e:
             print(f"Ошибка при применении настроек: {e}")
+
+    def draw_settings(self, parent_frame):  # type: ignore
+        message = ttk.Entry(parent_frame,
+                            style='Custom.TEntry')
+        message.insert(0, self.message)
+        message.grid(row=1, column=1, padx=10, pady=6, sticky="ew")
+        ttk.Label(
+            parent_frame,
+            text='Сообщение для чтения',
+            style='Settings.TLabel'
+        ).grid(row=1, column=0, padx=10, pady=6, sticky="w")
+
+        return {
+            "Сообщение для чтения": message,
+        }
 
     def run_state_machine(self) -> None | StateMachineResult:
         return self._start_simulation()
@@ -125,7 +141,6 @@ class JuniorReaderVisualizer(BaseVisualizer):
             # Создаем StateMachine с параметрами для Reader
             sm = StateMachine(cgml_sm, sm_parameters={
                               'message': message, 'speed': speed})
-            print(cgml_sm)
             # Запускаем машину состояний
             print(
                 f"Запускаю машину состояний Junior Reader с сообщением: '{message}', скорость: {speed}")

@@ -521,7 +521,6 @@ class JuniorGardenerVisualizer(BaseVisualizer):
                 pass
 
     def draw_settings(self, parent_frame):
-        self.entries = {}
         orientation = ttk.Combobox(
             parent_frame,
             values=[
