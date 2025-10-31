@@ -741,8 +741,8 @@ def PASS_EVENT_TO(obj: QHsm, e: str) -> None:
 # COMPONENTS.PY
 # ============================================================================
 class SchemeComponent(ABC):
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, __name: str, **kwargs):
+        self.name = __name
 
     def get_sm_options(self, options: dict):
         ...
@@ -910,8 +910,8 @@ class CyberBear:
 class Timer(SchemeComponent):
     """Component for working with time intervals."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._start_time = None
         self._interval = 0
         self._enabled = True
@@ -977,8 +977,8 @@ class Timer(SchemeComponent):
 class Accel(SchemeComponent):
     """Компонент для определения положения."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.orientation = 0
         self.ACCEL_DIR_DN = 1  # На ушах
         self.ACCEL_DIR_UP = 2  # На ногах
@@ -995,9 +995,9 @@ class Accel(SchemeComponent):
 class Button(SchemeComponent):
     """Компонент кнопки."""
 
-    def __init__(self, name: str, pin: int = 1):
-        super().__init__(name)
-        self.pin = pin
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
+        self.pin = kwargs.get('pin', 1)
         self.value = 0
         self._pressed = False
         self._released = False
@@ -1025,8 +1025,8 @@ class Button(SchemeComponent):
 class EarsBytes(SchemeComponent):
     """Компонент для получения байтов по акустическому каналу"""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.__bear: CyberBear | None = None
         self.value = 0
 
@@ -1045,7 +1045,6 @@ class EarsBytes(SchemeComponent):
 
     def loop_actions(self):
         signal = self.bear.get_signal()
-        print('Ears: ', signal)
         if signal is None:
             return
         if signal.type == 'ears':
@@ -1058,8 +1057,8 @@ class EarsBytes(SchemeComponent):
 class PhotoDiodeBytes(SchemeComponent):
     """Компонент для получения байтов по инфрокрасному каналу"""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.__bear: CyberBear | None = None
         self.value = 0
 
@@ -1078,7 +1077,6 @@ class PhotoDiodeBytes(SchemeComponent):
 
     def loop_actions(self):
         signal = self.bear.get_signal()
-        print('PhotoDiode: ', signal)
         if signal is None:
             return
         if signal.type == 'ir':
@@ -1092,8 +1090,8 @@ class PhotoDiodeBytes(SchemeComponent):
 class Speaker(SchemeComponent):
     """Компонент пищалки."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._playing = False
 
     def isNoteEnd(self):
@@ -1118,8 +1116,8 @@ class Speaker(SchemeComponent):
 class SpeakerSound(SchemeComponent):
     """Компонент для готовых звуков."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._playing = False
 
     def isSoundEnd(self):
@@ -1141,8 +1139,8 @@ class SpeakerSound(SchemeComponent):
 class PhotoDiode(SchemeComponent):
     """Компонент ИК-фотодиода (нос)."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.value = 0
         self.threshold = 0
         self._enabled = True
@@ -1185,11 +1183,12 @@ class Eyes(SchemeComponent):
         "&ColorPerfectWhite": (10, 10, 10, 0)
     }
 
-    def __init__(self, name: str, pin: int = 2):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
+        pin = kwargs.get('pin', 1)
         self.is_left = pin == 2  # Пин 2 - левый глаз, Пин 1 - правый глаз
         self.__bear: CyberBear | None = None
-        self.pin = pin
+        self.pin = int(pin)
 
     @property
     def bear(self):
@@ -1210,8 +1209,10 @@ class Eyes(SchemeComponent):
             return
         r, g, b, k = rgbk_color
         if self.pin == 2:
+            print('set_left_eye!')
             self.bear.set_left_eye(r, g, b, k)
         elif self.pin == 1:
+            print('set_right_eye!')
             self.bear.set_right_eye(r, g, b, k)
 
     def setColor(self, r: int, g: int, b: int, k: int):
@@ -1232,8 +1233,8 @@ class Eyes(SchemeComponent):
 class Microphone(SchemeComponent):
     """Компонент микрофона."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.value = 0
         self._threshold = 0
         self._cooldown = 0
@@ -1264,8 +1265,8 @@ class Microphone(SchemeComponent):
 class IR(SchemeComponent):
     """Компонент ИК-светодиода."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._enabled = False
 
     def on(self):
@@ -1278,8 +1279,8 @@ class IR(SchemeComponent):
 class Matrix(SchemeComponent):
     """Компонент матрицы светодиодов."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.__bear: CyberBear | None = None
 
     @property
@@ -1329,8 +1330,8 @@ class Matrix(SchemeComponent):
 class MatrixMask(SchemeComponent):
     """Компонент для масок матрицы."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.__bear: CyberBear | None = None
 
     @property
@@ -1369,8 +1370,8 @@ class MatrixMask(SchemeComponent):
 class MatrixAnimation(SchemeComponent):
     """Компонент для анимации матрицы."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._animation_finished = False
 
     def AnimationFinished(self):
@@ -1452,8 +1453,8 @@ class MatrixPicture(SchemeComponent):
         ]
     }
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self._current_picture = None
         self.__bear: CyberBear | None = None
 
@@ -1481,8 +1482,8 @@ class MatrixPicture(SchemeComponent):
 class Random(SchemeComponent):
     """Компонент генератора случайных чисел."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.value = 0  # Со знаком
         self.uValue = 0  # Без знака
         self._seed = None
@@ -1503,8 +1504,8 @@ class Random(SchemeComponent):
 class CalcInt(SchemeComponent):
     """Компонент калькулятора целых чисел."""
 
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.value = 0
 
     def set(self, value: int):
@@ -1619,8 +1620,8 @@ class CalcInt(SchemeComponent):
 class Reader(SchemeComponent):
     # signals: char_accepted
     # signals: line_finished
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.message = ''
         self.current_char = ''
         self.index = 0
@@ -1655,8 +1656,8 @@ class Impulse(SchemeComponent):
 
 
 class Counter(SchemeComponent):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.value = 0
 
     def set(self, value: int):
@@ -1842,8 +1843,8 @@ class Gardener:
 
 
 class Sensor(SchemeComponent):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.gardener = None
         self.flower = -1
 
@@ -1940,13 +1941,16 @@ class Sensor(SchemeComponent):
 
 
 class UserSignal(SchemeComponent):
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
+
     def call(self):
         EventLoop.add_event(f'{self.name}.isCalled', True)
 
 
 class Flower(SchemeComponent):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.gardener = None
 
     def get_sm_options(self, options: dict):
@@ -1975,8 +1979,8 @@ class Flower(SchemeComponent):
 
 
 class Mover(SchemeComponent):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.gardener = None
 
     def get_sm_options(self, options: dict):
@@ -2056,8 +2060,8 @@ class Mover(SchemeComponent):
 
 
 class Compass(SchemeComponent):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, __name: str, **kwargs):
+        super().__init__(__name, **kwargs)
         self.gardener = None
 
     def get_sm_options(self, options: dict):
@@ -3220,7 +3224,13 @@ def init_components(
         # Get component class from globals
         component_class = globals().get(cgml_comp.type)
         if component_class:
-            component_instance = component_class(cgml_comp.id)
+            # Передаем параметры компонента как kwargs
+            parameters = cgml_comp.parameters if hasattr(
+                cgml_comp, 'parameters') else {}
+            # Также передаем все глобальные параметры
+            parameters.update(sm_parameters)
+            # Создаем экземпляр с параметрами
+            component_instance = component_class(cgml_comp.id, **parameters)
             component_instance.get_sm_options(sm_parameters)
             initialized_components[cgml_comp.id] = Component(
                 id=cgml_comp.id,

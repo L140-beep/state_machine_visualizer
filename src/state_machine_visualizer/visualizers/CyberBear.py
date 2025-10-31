@@ -86,16 +86,16 @@ class CyberBearVisualizer(BaseVisualizer):
         matrix_frame.pack(pady=10)
 
         # Устанавливаем фиксированную ширину для контрольной колонки
-        CONTROL_WIDTH = 200  # Ширина в пикселях
+        CONTROL_WIDTH = 250  # Ширина в пикселях
         MIN_HEIGHT = 100  # Минимальная высота в пикселях
 
         # В контрольной колонке создаем фрейм для информации о байтах
         bytes_info_frame = ttk.LabelFrame(
             control_column,
-            text="Информация о байтах",
+            text=" Информация о байтах ",  # Добавляем пробелы вокруг текста
             width=CONTROL_WIDTH
         )
-        bytes_info_frame.pack(pady=5, anchor=tk.CENTER,
+        bytes_info_frame.pack(pady=10, padx=5, anchor=tk.CENTER,
                               expand=True, fill=tk.BOTH)
 
         # Метки для байтов с фиксированной высотой
@@ -104,53 +104,57 @@ class CyberBearVisualizer(BaseVisualizer):
             text="Предыдущий байт: -",
             anchor=tk.CENTER,
             justify=tk.CENTER,
-            width=25,  # Ширина в символах
-            height=2  # Высота в строках
+            width=28,  # Ширина в символах
+            height=2,  # Высота в строках
+            font=("Arial", 10)  # Добавляем шрифт для лучшей читаемости
         )
-        self.prev_byte_label.pack(padx=5, pady=2)
+        self.prev_byte_label.pack(padx=10, pady=5)
 
         self.current_byte_label = tk.Label(
             bytes_info_frame,
             text="Текущий байт: -",
             anchor=tk.CENTER,
             justify=tk.CENTER,
-            width=25,  # Ширина в символах
-            height=2  # Высота в строках
+            width=28,  # Ширина в символах
+            height=2,  # Высота в строках
+            font=("Arial", 10)  # Добавляем шрифт для лучшей читаемости
         )
-        self.current_byte_label.pack(padx=5, pady=2)
+        self.current_byte_label.pack(padx=10, pady=5)
 
         # Кнопки управления в контрольной колонке
         buttons_frame = ttk.LabelFrame(
             control_column,
-            text="Управление",
+            text=" Управление ",  # Добавляем пробелы вокруг текста
             width=CONTROL_WIDTH
         )
-        buttons_frame.pack(pady=5, anchor=tk.CENTER, expand=True, fill=tk.BOTH)
+        buttons_frame.pack(pady=10, padx=5, anchor=tk.CENTER,
+                           expand=True, fill=tk.BOTH)
 
         # Кнопка отправки байта
         # Создаем кнопки с фиксированной высотой
         button_style = ttk.Style()
-        button_style.configure('Fixed.TButton', padding=5)  # Добавляем отступы
+        # Увеличиваем отступы
+        button_style.configure('Fixed.TButton', padding=8)
 
         self.send_byte_button = ttk.Button(
             buttons_frame,
             text="▶ Отправить байт",
             command=self.send_next_byte,
             state='disabled',  # Изначально кнопка заблокирована
-            width=20,  # Ширина в символах
+            width=24,  # Увеличиваем ширину кнопки
             style='Fixed.TButton'
         )
-        self.send_byte_button.pack(padx=5, pady=5, ipady=3)
+        self.send_byte_button.pack(padx=10, pady=8, ipady=4)
 
         # Кнопка остановки
         stop_button = ttk.Button(
             buttons_frame,
             text="⏹️ Остановить",
             command=self.stop_simulation,
-            width=20,  # Ширина в символах
+            width=24,  # Увеличиваем ширину кнопки
             style='Fixed.TButton'
         )
-        stop_button.pack(padx=5, pady=5, ipady=3)
+        stop_button.pack(padx=10, pady=8, ipady=4)
 
         # Создаем сетку светодиодов
         rows, cols = self.matrix_size
@@ -283,21 +287,64 @@ class CyberBearVisualizer(BaseVisualizer):
         widgets = {}
         self.signal_rows = []  # Очищаем список сигналов перед отрисовкой
 
-        # Фрейм для списка сигналов
-        signals_frame = ttk.LabelFrame(parent_frame, text="Сигналы")
-        signals_frame.grid(
+        # Основной фрейм для списка сигналов
+        main_signals_frame = ttk.LabelFrame(parent_frame, text="Сигналы")
+        main_signals_frame.grid(
             row=0,
             column=0,
             columnspan=2,
-            sticky='ew',
+            sticky='nsew',  # Растягиваем по всем направлениям
             padx=5,
             pady=5
         )
+
+        # Внутренний фрейм для размещения canvas и scrollbar
+        signals_frame = ttk.Frame(main_signals_frame)
+        signals_frame.pack(fill='both', expand=True, padx=5, pady=5)
+
+        # Создаем canvas и scrollbar
+        canvas = tk.Canvas(signals_frame)
+        scrollbar = ttk.Scrollbar(signals_frame, orient="vertical", 
+                                command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        # Настраиваем scrollbar
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack для canvas и scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Создаем окно в canvas для отображения frame
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # Обновляем размер скроллируемой области при изменении содержимого
+        def update_scroll_region(event=None):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Подстраиваем размеры канваса
+            frame_width = scrollable_frame.winfo_reqwidth()
+            canvas_width = canvas.winfo_width()
+            if frame_width > canvas_width:
+                canvas.configure(width=frame_width)
+
+        scrollable_frame.bind("<Configure>", update_scroll_region)
+
+        # Привязываем прокрутку колесиком мыши
+        def on_mousewheel(event):
+            canvas.yview_scroll(-1 * (event.delta // 120), "units")
+        
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        # Заменяем signals_frame на scrollable_frame для добавления новых строк
+        signals_frame = scrollable_frame
 
         def add_signal_row():
             """Добавляет новую строку с сигналом"""
             row_frame = ttk.Frame(signals_frame)
             row_frame.pack(fill='x', padx=5, pady=2)
+            
+            # Обновляем область прокрутки после добавления новой строки
+            update_scroll_region()
 
             # Словарь для преобразования отображаемых имен в реальные
             signal_types = {
@@ -335,9 +382,11 @@ class CyberBearVisualizer(BaseVisualizer):
                 row_frame,
                 text="✕",
                 width=3,
-                command=lambda: delete_signal_row(row_frame)
+                command=lambda r=row_frame: delete_signal_row(r)
             )
             delete_btn.pack(side='left', padx=5)
+            # Обновляем область прокрутки после добавления кнопки
+            update_scroll_region()
 
             self.signal_rows.append({
                 'frame': row_frame,
@@ -363,9 +412,13 @@ class CyberBearVisualizer(BaseVisualizer):
                 if row['frame'] != row_frame
             ]
 
+        # Создаем отдельный frame для кнопки добавления
+        add_btn_frame = ttk.Frame(parent_frame)
+        add_btn_frame.grid(row=1, column=0, columnspan=2, sticky='ew', pady=5)
+
         # Кнопка добавления сигнала
         add_btn = ttk.Button(
-            signals_frame,
+            add_btn_frame,
             text="+ Добавить сигнал",
             command=add_signal_row
         )
@@ -400,14 +453,22 @@ class CyberBearVisualizer(BaseVisualizer):
 
             # Обновляем метки
             if self.prev_signal:
+                display_type = next(
+                    name for name, type_ in self.signal_types.items()
+                    if type_ == self.prev_signal.type
+                )
                 prev_text = (
-                    f"Предыдущий байт: {self.prev_signal.type}="
+                    f"Предыдущий байт: {display_type}="
                     f"{self.prev_signal.value}"
                 )
                 self.prev_byte_label.config(text=prev_text)
 
+            display_type = next(
+                name for name, type_ in self.signal_types.items()
+                if type_ == current_signal.type
+            )
             curr_text = (
-                f"Текущий байт: {current_signal.type}="
+                f"Текущий байт: {display_type}="
                 f"{current_signal.value}"
             )
             self.current_byte_label.config(text=curr_text)

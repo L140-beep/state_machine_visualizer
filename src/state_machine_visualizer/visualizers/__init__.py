@@ -8,7 +8,7 @@ from state_machine_visualizer.visualizers.CyberBear import CyberBearVisualizer
 PLATFORM_VISUALIZER_CLASSES = {
     'junior-gardener': JuniorGardenerVisualizer,
     'junior-reader': JuniorReaderVisualizer,
-    'blg-mb-1-a12': CyberBearVisualizer,  # КиберМишка
+    'blg-mb-junior': CyberBearVisualizer,  # КиберМишка
     # Добавьте другие платформы по мере необходимости
 }
 
