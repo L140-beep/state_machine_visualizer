@@ -3282,8 +3282,12 @@ class StateMachineResult:
     components: dict
 
 
-def run_state_machine(sm: StateMachine,
-                      signals: list, timeout_sec: float = 100000.0) -> StateMachineResult:
+def run_state_machine(
+        sm: StateMachine,
+        signals: list,
+        timeout_sec: float = 100000.0,
+        isInfinite: bool = False
+) -> StateMachineResult:
     """
     Запускает машину состояний на основе CGML XML и списка сигналов.
     Возвращает StateMachineResult: был ли выход по таймауту, список сигналов, компоненты.
@@ -3306,8 +3310,9 @@ def run_state_machine(sm: StateMachine,
 
         event = EventLoop.get_event()
         if event is None:
-            continue
-
+            if isInfinite:
+                continue
+            break
         if event == 'break':
             break
 

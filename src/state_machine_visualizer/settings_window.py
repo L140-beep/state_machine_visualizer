@@ -1,80 +1,22 @@
 import tkinter as tk
 from tkinter import ttk
-import json
-import os
+from typing import Dict
 from state_machine_visualizer.theme import COLORS
+from state_machine_visualizer.visualizers.base import BaseVisualizer
 
 
 class SettingsWindow:
-    def refresh_widgets(self, new_settings=None):
-        """Обновляет содержимое окна настроек динамически."""
-        if new_settings is not None:
-            self.settings = new_settings
-        # Очищаем содержимое scrollable_frame, но сохраняем кнопку
-        for widget in self.scrollable_frame.winfo_children():
-            if hasattr(self, 'button_frame') and widget != self.button_frame:
-                widget.destroy()
-            elif not hasattr(self, 'button_frame'):
-                widget.destroy()
 
-        # Заголовки таблицы
-        ttk.Label(self.scrollable_frame, text="Название",
-                  style='Settings.TLabel', font=('Segoe UI', 10, 'bold')).grid(
-            row=0, column=0, padx=10, pady=8, sticky="w")
-        ttk.Label(self.scrollable_frame, text="Значение",
-                  style='Settings.TLabel', font=('Segoe UI', 10, 'bold')).grid(
-            row=0, column=1, padx=10, pady=8, sticky="w")
-
-        # Загрузка существующих настроек
-        self.entries = {}
-        if self.settings:
-            for i, (key, value) in enumerate(self.settings.items(), start=1):
-                ttk.Label(self.scrollable_frame, text=key, style='Settings.TLabel').grid(
-                    row=i, column=0, padx=10, pady=6, sticky="w")
-
-                if key == "Ориентация":
-                    directions = ["Север", "Юг", "Запад", "Восток"]
-                    entry = ttk.Combobox(self.scrollable_frame, values=directions, state="readonly")
-                    if value in directions:
-                        entry.set(value)
-                    else:
-                        entry.set("Север")
-                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
-                else:
-                    entry = ttk.Entry(self.scrollable_frame, style='Custom.TEntry')
-                    entry.insert(0, value)
-                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
-                self.entries[key] = entry
-        else:
-            ttk.Label(self.scrollable_frame, text="Нет доступных настроек.", style='Settings.TLabel').grid(
-                row=1, column=0, columnspan=2, padx=10, pady=20, sticky="w")
-
-        self.scrollable_frame.columnconfigure(1, weight=1)
-
-        # Создаем или обновляем позицию кнопки сохранения
-        if not hasattr(self, 'button_frame'):
-            self.create_save_button()
-        
-        # Обновляем позицию кнопки
-        button_row = len(self.settings) + 2 if self.settings else 2
-        self.button_frame.grid(row=button_row, column=0,
-                              columnspan=2, sticky="ew", pady=(20, 0))
-
-    def __init__(self, parent, visualizer_settings=None):
+    def __init__(self, parent, visualizer: BaseVisualizer):
         self.parent = parent
-        self.visualizer_settings = visualizer_settings or {}
-        self.settings = {}
-        self.load_settings()  # settings и visualizer_settings будут заполнены
-
+        self.settings: Dict[str, ttk.Widget] = {}
+        self.visualizer = visualizer
         self.window = tk.Toplevel(parent)
         self.window.title("Настройки")
         self.window.configure(bg=COLORS['settings_bg'])
         self.window.resizable(True, True)
         self.window.minsize(400, 300)
-
-        self.create_widgets()  # теперь виджеты создаются только после загрузки настроек
-    # Центрируем окно только после полной отрисовки (см. adjust_window_size)
-    # self.center_window()  # убрано отсюда
+        self.create_widgets()
 
     def center_window(self):
         """Центрирует окно относительно родительского"""
@@ -117,7 +59,8 @@ class SettingsWindow:
         )
 
         # Создаем окно в Canvas для фрейма с центрированием
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.create_window(
+            (0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=scrollbar.set)
 
         # Упаковываем Canvas и Scrollbar
@@ -125,7 +68,8 @@ class SettingsWindow:
         scrollbar.pack(side="right", fill="y")
 
         # Привязываем изменение размера Canvas для центрирования содержимого
-        self.canvas.bind('<Configure>', lambda e: self.center_content(self.canvas))
+        self.canvas.bind(
+            '<Configure>', lambda e: self.center_content(self.canvas))
 
         # Заголовки таблицы
         ttk.Label(self.scrollable_frame, text="Название",
@@ -135,40 +79,17 @@ class SettingsWindow:
                   style='Settings.TLabel', font=('Segoe UI', 10, 'bold')).grid(
             row=0, column=1, padx=10, pady=8, sticky="w")
 
-        # Загрузка существующих настроек
-        self.entries = {}
-        if self.settings:
-            # Определяем, Gardener ли это (по ключам или платформе)
-            platform = ''
-            if 'platform' in self.settings:
-                platform = str(self.settings['platform']).lower()
-            elif self.visualizer_settings and 'platform' in self.visualizer_settings:
-                platform = str(self.visualizer_settings['platform']).lower()
-            is_gardener = 'gardener' in platform
-            for i, (key, value) in enumerate(self.settings.items(), start=1):
-                ttk.Label(self.scrollable_frame, text=key, style='Settings.TLabel').grid(
-                    row=i, column=0, padx=10, pady=6, sticky="w")
-
-                if key == "Ориентация" and is_gardener:
-                    entry = ttk.Combobox(self.scrollable_frame, values=[
-                                         "Север", "Юг", "Запад", "Восток"], state="readonly")
-                    entry.set(value)
-                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
-                else:
-                    entry = ttk.Entry(self.scrollable_frame,
-                                      style='Custom.TEntry')
-                    entry.insert(0, value)
-                    entry.grid(row=i, column=1, padx=10, pady=6, sticky="ew")
-                self.entries[key] = entry
-        else:
-            # Если настроек нет, показываем заглушку
-            ttk.Label(self.scrollable_frame, text="Нет доступных настроек.", style='Settings.TLabel').grid(
-                row=1, column=0, columnspan=2, padx=10, pady=20, sticky="w")
+        self.settings = self.visualizer.draw_settings(self.scrollable_frame)
 
         # Настройка весов колонок для растяжения
         self.scrollable_frame.columnconfigure(1, weight=1)
-
         # Кнопка сохранения будет создана в refresh_widgets
+        if not hasattr(self, 'button_frame'):
+            self.create_save_button()
+
+        button_row = len(self.settings) + 2
+        self.button_frame.grid(row=button_row, column=0,
+                               columnspan=2, sticky="ew", pady=(20, 0))
 
         # Привязываем обработчик изменения размера
         self.window.bind('<Configure>', self.on_window_configure)
@@ -182,10 +103,10 @@ class SettingsWindow:
         self.button_frame = ttk.Frame(
             self.scrollable_frame, style='Settings.TFrame')
         # Позиция будет установлена в refresh_widgets
-        
+
         self.save_btn = ttk.Button(self.button_frame, text="Сохранить",
-                                  command=self.save_settings,
-                                  style='Primary.TButton')
+                                   command=self.save_settings,
+                                   style='Primary.TButton')
         self.save_btn.pack(pady=10)
 
     def on_frame_configure(self, canvas):
@@ -200,13 +121,13 @@ class SettingsWindow:
         # Получаем размеры Canvas и содержимого
         canvas_width = canvas.winfo_width()
         frame_width = self.scrollable_frame.winfo_reqwidth()
-        
+
         # Вычисляем позицию для центрирования
         if frame_width < canvas_width:
             x = (canvas_width - frame_width) // 2
         else:
             x = 0
-        
+
         # Обновляем позицию окна в Canvas
         if canvas.find_all():
             canvas.coords(canvas.find_all()[0], x, 0)
@@ -236,47 +157,7 @@ class SettingsWindow:
         # Центрируем окно
         self.center_window()
 
-    def load_settings(self):
-        # Начинаем с настроек визуализатора (они имеют приоритет)
-        self.settings = {}
-
-        # Добавляем настройки визуализатора
-        for key, value in self.visualizer_settings.items():
-            self.settings[key] = value
-
-        # Загружаем базовые настройки (только те, которых нет в настройках визуализатора)
-        if os.path.exists("settings.json"):
-            with open("settings.json", "r") as f:
-                basic_settings = json.load(f)
-                for key, value in basic_settings.items():
-                    if key not in self.visualizer_settings:
-                        self.settings[key] = value
-        else:
-            # Базовые настройки по умолчанию
-            default_basic_settings = {
-            }
-            for key, value in default_basic_settings.items():
-                if key not in self.visualizer_settings:
-                    self.settings[key] = value
-
-
     def save_settings(self):
-        # Собираем настройки из полей ввода
-        for key, entry in self.entries.items():
-            self.settings[key] = entry.get()
-
-        # Сохраняем базовые настройки в файл (исключаем настройки визуализатора)
-        basic_settings = {k: v for k, v in self.settings.items()
-                          if k not in self.visualizer_settings}
-        with open("settings.json", "w") as f:
-            json.dump(basic_settings, f, indent=4)
-
-        # Применяем настройки к визуализатору
-        if hasattr(self.parent, 'current_visualizer') and self.parent.current_visualizer:
-            visualizer_settings = {k: v for k, v in self.settings.items()
-                                   if k in self.visualizer_settings}
-            if hasattr(self.parent.current_visualizer, 'apply_settings'):
-                self.parent.current_visualizer.apply_settings(
-                    visualizer_settings)
-
+        values = self.visualizer.get_settings_values(self.settings)
+        self.visualizer.apply_settings(values)
         self.window.destroy()

@@ -3,8 +3,14 @@ from tkinter import ttk
 from typing import Dict, Any
 
 from state_machine_visualizer.visualizers.base import BaseVisualizer
-from state_machine_visualizer.simulator import StateMachineResult, run_state_machine, StateMachine, Gardener, GardenerCrashException, EventLoop
-
+from state_machine_visualizer.simulator import (
+    StateMachineResult,
+    run_state_machine,
+    StateMachine,
+    Gardener,
+    GardenerCrashException,
+    EventLoop
+)
 
 # Настройки для визуализации матрицы
 settings = {
@@ -20,15 +26,11 @@ def process_file(file_path):
     return {"status": "success", "message": "Матрица создана"}
 
 
-def get_preview_data(file_path):
-    """Возвращает данные для предпросмотра"""
-    return {"type": "matrix", "width": 10, "height": 8}
-
-
 class JuniorGardenerVisualizer(BaseVisualizer):
     def update_state_machine_data(self, new_data: Dict[str, Any]):
         """Обновляет данные машины состояний и UI."""
         self.state_machine_data = new_data
+
         # Обновляем инфо-лейбл, если он есть
         if hasattr(self, 'widget') and self.widget:
             for child in self.widget.winfo_children():
@@ -52,6 +54,13 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         self.edit_mode = False  # Режим редактирования поля
         self.current_gardener = None  # Текущий экземпляр gardener
         super().__init__(parent, state_machine_data)
+
+    def get_settings_values(self, widgets_dict: Dict[str, ttk.Widget]) -> Dict[str, Any]:
+        return {
+            'Начальное направление': widgets_dict['Начальное направление'].get(),
+            'Ширина поля': int(widgets_dict['Ширина поля'].get()),
+            'Высота поля': int(widgets_dict['Высота поля'].get())
+        }
 
     def get_display_matrix(self):
         """Возвращает матрицу, которая должна отображаться в текущем режиме."""
@@ -167,19 +176,19 @@ class JuniorGardenerVisualizer(BaseVisualizer):
         return {
             "Ширина матрицы": str(self.width),
             "Высота матрицы": str(self.height),
-            "Ориентация": self.orientation  # Север/Юг/Запад/Восток
+            "Начальное направление": self.orientation  # Север/Юг/Запад/Восток
         }
 
-    def apply_settings(self, settings):
+    def apply_settings(self, settings: Dict[str, Any]) -> None:
         """Применяет настройки к визуализатору."""
         try:
             # Обновляем размеры матрицы
-            if "Ширина матрицы" in settings:
-                self.width = int(settings["Ширина матрицы"])
-            if "Высота матрицы" in settings:
-                self.height = int(settings["Высота матрицы"])
-            if "Ориентация" in settings:
-                self.orientation = settings["Ориентация"]
+            if "Ширина поля" in settings:
+                self.width = int(settings["Ширина поля"])
+            if "Высота поля" in settings:
+                self.height = int(settings["Высота поля"])
+            if "Начальное направление" in settings:
+                self.orientation = settings["Начальное направление"]
 
             # Обновляем размеры матрицы
             self.ensure_matrix_size()
@@ -188,6 +197,8 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             if hasattr(self, 'matrix_frame'):
                 for widget in self.matrix_frame.winfo_children():
                     widget.destroy()
+                print(self.width, self.height, self.orientation)
+                print('apply_settings: draw matrix')
                 self.draw_matrix()
                 self.matrix_frame.update_idletasks()
                 if hasattr(self, 'canvas'):
@@ -414,6 +425,7 @@ class JuniorGardenerVisualizer(BaseVisualizer):
 
     def draw_matrix(self):
         """Отрисовывает матрицу в виде таблицы с выделением gardener"""
+        print('draw matrix!')
         matrix = self.get_display_matrix()
         # на случай рассинхронизации размеров
         rows = self.height if self.edit_mode else len(matrix)
@@ -508,6 +520,47 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             except Exception:
                 pass
 
+    def draw_settings(self, parent_frame):
+        self.entries = {}
+        orientation = ttk.Combobox(
+            parent_frame,
+            values=[
+                "Север", "Юг", "Запад", "Восток"
+            ],
+            state="readonly"
+        )
+        ttk.Label(
+            parent_frame,
+            text='Начальное направление',
+            style='Settings.TLabel'
+        ).grid(row=1, column=0, padx=10, pady=6, sticky="w")
+        orientation.set(self.orientation)
+        orientation.grid(row=1, column=1, padx=10, pady=6, sticky="ew")
+        width = ttk.Entry(parent_frame,
+                          style='Custom.TEntry')
+        width.insert(0, str(self.width))
+        width.grid(row=2, column=1, padx=10, pady=6, sticky="ew")
+        ttk.Label(
+            parent_frame,
+            text='Ширина поля',
+            style='Settings.TLabel'
+        ).grid(row=2, column=0, padx=10, pady=6, sticky="w")
+        ttk.Label(
+            parent_frame,
+            text='Высота поля',
+            style='Settings.TLabel'
+        ).grid(row=3, column=0, padx=10, pady=6, sticky="w")
+        height = ttk.Entry(parent_frame,
+                           style='Custom.TEntry')
+        height.insert(0, str(self.height))
+        height.grid(row=3, column=1, padx=10, pady=6, sticky="ew")
+
+        return {
+            'Начальное направление': orientation,
+            'Ширина поля': width,
+            'Высота поля': height
+        }
+
     def clear_field(self):
         """Очищает исходное поле (в режиме редактирования)"""
         # Сброс исходного поля в нули по текущим размерам
@@ -521,14 +574,3 @@ class JuniorGardenerVisualizer(BaseVisualizer):
             self.matrix_frame.update_idletasks()
             if hasattr(self, 'canvas'):
                 self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-
-def create_matrix_visualizer(parent, settings_dict):
-    """Фабричная функция для создания визуализатора матрицы"""
-    try:
-        width = int(settings_dict.get("Ширина матрицы", 10))
-        height = int(settings_dict.get("Высота матрицы", 8))
-
-        return JuniorGardenerVisualizer(parent, settings_dict)
-    except (ValueError, TypeError):
-        return JuniorGardenerVisualizer(parent)  # Со значениями по умолчанию

@@ -238,7 +238,7 @@ class MainApp(tk.Tk):
         if hasattr(self.current_visualizer, 'get_settings'):
             visualizer_settings = self.current_visualizer.get_settings()
 
-        settings_win = SettingsWindow(self, visualizer_settings)
+        settings_win = SettingsWindow(self, self.current_visualizer)
         if hasattr(settings_win, 'refresh_widgets'):
             settings_win.refresh_widgets(visualizer_settings)
 

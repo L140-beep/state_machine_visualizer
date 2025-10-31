@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from tkinter import ttk
 from typing import Any, Dict
 import threading
 from state_machine_visualizer.simulator import StateMachineResult
@@ -27,9 +28,28 @@ class BaseVisualizer(ABC):
         """Возвращает виджет визуализатора."""
         return self.widget
 
-    def get_settings(self):
-        """Возвращает настройки визуализатора для окна настроек."""
-        return {}
+    @abstractmethod
+    def get_settings_values(self, widgets_dict: Dict[str, ttk.Widget]) -> Dict[str, Any]:
+        """Получает значения из виджетов настроек.
+
+        Args:
+            widgets_dict: словарь с виджетами {имя_настройки: виджет}
+        Returns:
+            Dict[str, Any]: словарь с значениями настроек
+        """
+        pass
+
+    @abstractmethod
+    def draw_settings(self, parent_frame) -> Dict[str, ttk.Widget]:
+        """Отрисовывает настройки визуализатора в указанном фрейме.
+
+        Args:
+            parent_frame: родительский фрейм для виджетов настроек
+
+        Returns:
+            dict: виджеты настроек, чтобы потом получить из них значения
+        """
+        pass
 
     def apply_settings(self, settings):
         """Применяет настройки к визуализатору."""
