@@ -1,7 +1,3 @@
-"""
-State Machine Simulator Bundle
-Combines all modules into a single file for easier distribution and use.
-"""
 from copy import deepcopy
 import ast
 import xml.etree.ElementTree as ET
@@ -23,9 +19,11 @@ from collections import deque
 from collections.abc import Iterable
 from functools import partial
 from abc import ABC
+from queue import Queue
 import time
 import sys
 import re
+
 
 # ============================================================================
 # UTILS.PY
@@ -535,7 +533,11 @@ class EventLoop:
 
     @staticmethod
     def add_event(event: str, is_called=False):
-        """Добавляет событие в цикл событий."""
+        """
+        Добавляет событие в цикл событий.
+
+        is_called: события, которые будут проверяться в проверочной системе.
+        """
         EventLoop.insert_event_idx += 1
         EventLoop.events.insert(
             EventLoop.insert_event_idx,
@@ -753,8 +755,41 @@ class SchemeComponent(ABC):
 # Все классы компонентов кладутся сюда
 
 
+class CyberBearSignal:
+    type: Literal['ears', 'ir']
+    value: int
+
+
 class CyberBear:
     """Класс для хранения состояния КиберМишки."""
+    heart = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 100, 0, 100, 0],
+        [100, 100, 100, 100, 100],
+        [0, 100, 100, 100, 0],
+        [0, 0, 100, 0, 0],
+        [0, 0, 0, 0, 0],
+    ]
+    smile = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 100, 0, 100, 0],
+        [0, 0, 0, 0, 0],
+        [0, 100, 100, 100, 0],
+        [100, 0, 0, 0, 100],
+        [0, 0, 0, 0, 0],
+    ]
+
+    empty = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+    ]
 
     def __init__(self):
         # Цвет левого глаза (RGBK)
@@ -764,10 +799,53 @@ class CyberBear:
         self.right_eye = [0, 0, 0, 0]
 
         # Матрица светодиодов 7x5 (7 строк, 5 столбцов)
-        self.matrix = [[0 for _ in range(5)] for _ in range(7)]  # Создаем в правильном порядке: [rows][cols]
+        # Создаем в правильном порядке: [rows][cols]
+        self.matrix = [[0 for _ in range(5)] for _ in range(7)]
 
         # Callback для обновления визуализации
-        self.on_state_changed: Callable[[], None] | None = None
+        self.on_state_changed: Optional[Callable[[], None]] = None
+        self.__signals: Optional[Queue[CyberBearSignal]] = None
+
+    # Сравнить текущую матрицу с полученной
+    def is_matrix_equal(self, matrix: list):
+        if (
+            len(matrix) != len(self.matrix) or
+            len(matrix[0]) != len(self.matrix[0])
+        ):
+            raise Exception('Размерности не совпадают!')
+
+        for i in range(len(matrix)):
+            for j in range(len(matrix[0])):
+                if matrix[i][j] != self.matrix[i][j]:
+                    return False
+        return True
+
+    def check_pattern(self):
+        if self.is_matrix_equal(self.heart):
+            print('heart!')
+            EventLoop.add_event('heart', True)
+        elif self.is_matrix_equal(self.smile):
+            EventLoop.add_event('smile', True)
+            print('smile!')
+        elif self.is_matrix_equal(self.empty):
+            EventLoop.add_event('empty', True)
+            print('empty!')
+
+    @property
+    def signals(self):
+        if self.__signals is None:
+            raise Exception('Отсутствют сигналы')
+        return self.__signals
+
+    @signals.setter
+    def signals(self, signals: Queue[CyberBearSignal]):
+        self.__signals = signals
+
+    def get_signal(self) -> CyberBearSignal | None:
+        return self.signals.get()
+
+    def add_signal(self, signal: CyberBearSignal):
+        self.signals.put(signal)
 
     def set_left_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет левого глаза."""
@@ -786,7 +864,7 @@ class CyberBear:
         if 0 <= row < 7 and 0 <= col < 5:
             self.matrix[row][col] = value
 
-    def set_pattern(self, pattern: list[int]):
+    def set_pattern(self, pattern: list):
         """Установить шаблон на матрицу из одномерного списка.
         Размер матрицы 7x5 (7 строк, 5 столбцов).
         Паттерн приходит как одномерный массив из 35 элементов.
@@ -799,9 +877,11 @@ class CyberBear:
             row = i // 5  # Получаем индекс строки (0-6)
             col = i % 5   # Получаем индекс столбца (0-4)
             self.set_matrix_pixel(row, col, pattern[i])
-        
+
         if self.on_state_changed:
             self.on_state_changed()
+
+        self.check_pattern()
 
     def get_matrix_pixel(self, row: int, col: int) -> int:
         """Получить значение пикселя матрицы."""
@@ -811,12 +891,17 @@ class CyberBear:
 
     def clear_matrix(self):
         """Очистить матрицу."""
-        self.matrix = [[0 for _ in range(7)] for _ in range(5)]
+        self.matrix = [[0 for _ in range(5)] for _ in range(7)]
+        self.check_pattern()
+        if self.on_state_changed:
+            self.on_state_changed()
 
     def clear_eyes(self):
         """Выключить оба глаза."""
         self.left_eye = [0, 0, 0, 0]
         self.right_eye = [0, 0, 0, 0]
+        if self.on_state_changed:
+            self.on_state_changed()
 
 
 class Timer(SchemeComponent):
@@ -1065,7 +1150,6 @@ class Eyes(SchemeComponent):
             self.bear.set_left_eye(r, g, b, k)
         elif self.pin == 1:
             self.bear.set_right_eye(r, g, b, k)
-        print(f"зажгли цветом {r,g,b,k}")
 
     def off(self):
         # Пин 1 - правый глаз, Пин 2 - левый глаз
@@ -1073,7 +1157,6 @@ class Eyes(SchemeComponent):
             self.bear.set_left_eye(0, 0, 0, 0)
         elif self.pin == 1:
             self.bear.set_right_eye(0, 0, 0, 0)
-        print(f"выключены")
 
 
 class Microphone(SchemeComponent):
@@ -1169,6 +1252,7 @@ class Matrix(SchemeComponent):
                     self.bear.set_matrix_pixel(row, col, brightness)
 
     def clear(self):
+        print('clear!!!')
         self.bear.clear_matrix()
 
 
@@ -3150,10 +3234,20 @@ def run_state_machine(sm: StateMachine,
                 component.obj.loop_actions()
 
         event = EventLoop.get_event()
+        if event is None:
+            continue
+
         if event == 'break':
             break
+
         SIMPLE_DISPATCH(qhsm, event)
-    return StateMachineResult(timeout, EventLoop.events, EventLoop.called_events, sm.components)
+
+    return StateMachineResult(
+        timeout,
+        EventLoop.events,
+        EventLoop.called_events,
+        sm.components
+    )
 
 
 # ============================================================================
@@ -3191,7 +3285,7 @@ def check_reader(result: StateMachineResult, answer_signals: list) -> tuple:
     return ('', True)
 
 
-def check_gardener(result: StateMachineResult, gardener: Gardener, answer_state: list) -> tuple:
+def check_gardener(result: StateMachineResult, gardener: Gardener, answer_state: list, required_position: Optional[set],) -> tuple:
     if result.timeout:
         return ('Машина состояний работает слишком долго!', False)
     # from pprint import pprint
@@ -3200,6 +3294,10 @@ def check_gardener(result: StateMachineResult, gardener: Gardener, answer_state:
         for j in range(len(gardener.field[0])):
             if gardener.field[i][j] != answer_state[i][j]:
                 return ('Неверный ответ', False)
+    if required_position:
+        x, y = required_position
+        if not (gardener.x == x and gardener.y == y):
+            return ('Неверная позиция садовника', False)
     return ('', True)
 
 
@@ -3226,6 +3324,7 @@ def auto_test_gardener(
     entry_signals: list,
     answer_gardener_state: list,
     ignored_signals: list,
+    required_position: Optional[set],
     timeout: int = 5
 ):
     sm = StateMachine(
@@ -3235,7 +3334,8 @@ def auto_test_gardener(
         },
     )
     result = run_state_machine(sm, entry_signals, timeout)
-    check_result = check_gardener(result, gardener, answer_gardener_state)
+    check_result = check_gardener(
+        result, gardener, answer_gardener_state, required_position)
     return check_result, result
 
 
@@ -3259,7 +3359,7 @@ def extract_state_machine(code: str):
 # output - данные для проверки решений (исходящие)
 # user_programs - массив программ участника в составе решения
 def run(run_index, iteration_index, input, output, user_programs):
-    SCORE = 5
+    SCORE = 1
     current_score = 0
     xml = extract_state_machine(user_programs[0])
     if xml is None:
@@ -3269,46 +3369,7 @@ def run(run_index, iteration_index, input, output, user_programs):
     assert cgml_state_machines.state_machines, "Отсутствуют машины состояний!"
     cgml_sm = list(cgml_state_machines.state_machines.values())[0]
     error = 'Машина состояний выполнилась успешно!'
-    tests = [
-        (
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0]
-            ], [
-                [0, 0, 0, 0, 0],
-                [0, 3, 3, 3, 0],
-                [0, 3, 0, 0, 0],
-                [0, 3, 3, 3, 0],
-                [0, 3, 0, 3, 0],
-                [0, 3, 3, 3, 0],
-                [0, 0, 0, 0, 0]
-            ],
-        ),
-        (
-            [
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-            ], [
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 3, 3, 3, 3, 3, 0],
-                [0, 3, 0, 0, 0, 0, 0],
-                [0, 3, 3, 3, 3, 3, 0],
-                [0, 3, 0, 0, 0, 3, 0],
-                [0, 3, 3, 3, 3, 3, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-            ],
-        ),
-    ]
+    tests = []
     log = ''
     for i, test in enumerate(tests):
         log += f'Test {i}: '
@@ -3320,18 +3381,14 @@ def run(run_index, iteration_index, input, output, user_programs):
         check_result, run_result = auto_test_gardener(
             cgml_sm,
             gardener,
-            [], test[1], []
+            [], test[1], [], test[2]
         )
         check_error, status = check_result
         if status is True:
-            current_score = SCORE
+            current_score += SCORE
             error = 'Машина состояний выполнилась успешно!'
         else:
-            current_score = 0
             error = check_error
-            log += check_error + '\n'
-            log += 'Signals: ' + ', '.join(run_result.called_signals)
-            break
         log += error + '\n'
         log += 'Signals: ' + ', '.join(run_result.called_signals) + '\n'
 

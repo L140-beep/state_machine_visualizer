@@ -129,15 +129,7 @@ class CyberBearVisualizer(BaseVisualizer):
 
     def get_settings(self):
         """Возвращает настройки визуализатора."""
-        return {
-            "pixel_size": {
-                "type": "int",
-                "label": "Размер пикселя (px)",
-                "value": self.pixel_size,
-                "min": 10,
-                "max": 50
-            }
-        }
+        return {}
 
     def _start_simulation(self):
         """Запускает симуляцию машины состояний."""
