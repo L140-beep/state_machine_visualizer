@@ -19,7 +19,6 @@ from collections import deque
 from collections.abc import Iterable
 from functools import partial
 from abc import ABC
-from queue import Queue
 import time
 import sys
 import re
@@ -755,6 +754,7 @@ class SchemeComponent(ABC):
 # Все классы компонентов кладутся сюда
 
 
+@dataclass
 class CyberBearSignal:
     type: Literal['ears', 'ir']
     value: int
@@ -804,7 +804,9 @@ class CyberBear:
 
         # Callback для обновления визуализации
         self.on_state_changed: Optional[Callable[[], None]] = None
-        self.__signals: Optional[Queue[CyberBearSignal]] = None
+        self.__signals: Optional[List[CyberBearSignal]] = []
+        self.__signals.append(CyberBearSignal('ir', 5))
+        self.__signals.append(CyberBearSignal('ears', 5))
 
     # Сравнить текущую матрицу с полученной
     def is_matrix_equal(self, matrix: list):
@@ -838,14 +840,16 @@ class CyberBear:
         return self.__signals
 
     @signals.setter
-    def signals(self, signals: Queue[CyberBearSignal]):
+    def signals(self, signals: List[CyberBearSignal]):
         self.__signals = signals
 
     def get_signal(self) -> CyberBearSignal | None:
-        return self.signals.get()
+        if len(self.signals) == 0:
+            return None
+        return self.signals.pop(0)
 
     def add_signal(self, signal: CyberBearSignal):
-        self.signals.put(signal)
+        self.signals.insert(0, signal)
 
     def set_left_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет левого глаза."""
@@ -1017,6 +1021,73 @@ class Button(SchemeComponent):
             EventLoop.add_event(f'{self.name}.clicked')
             return True
         return False
+
+
+class EarsBytes(SchemeComponent):
+    """Компонент для получения байтов по акустическому каналу"""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.__bear: CyberBear | None = None
+        self.value = 0
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте Eyes')
+        return self.__bear
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
+            raise ValueError(
+                "CyberBear instance is required for Ears component!")
+
+    def loop_actions(self):
+        signal = self.bear.get_signal()
+        print('Ears: ', signal)
+        if signal is None:
+            return
+        if signal.type == 'ears':
+            EventLoop.add_event(f'{self.name}.isByteReceived')
+            self.value = signal.value
+        else:
+            self.bear.add_signal(signal)
+
+
+class PhotoDiodeBytes(SchemeComponent):
+    """Компонент для получения байтов по инфрокрасному каналу"""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.__bear: CyberBear | None = None
+        self.value = 0
+
+    @property
+    def bear(self):
+        if self.__bear is None:
+            raise Exception('Нет инстанса CyberBear в компоненте IRBytes')
+        return self.__bear
+
+    def get_sm_options(self, options: dict):
+        """Инициализация компонента с параметрами из state machine."""
+        self.__bear = options.get('CyberBear')
+        if self.__bear is None:
+            raise ValueError(
+                "CyberBear instance is required for Ears component!")
+
+    def loop_actions(self):
+        signal = self.bear.get_signal()
+        print('PhotoDiode: ', signal)
+        if signal is None:
+            return
+        if signal.type == 'ir':
+            print(f'{self.name}.isByteReceived!')
+            EventLoop.add_event(f'{self.name}.isByteReceived')
+            self.value = signal.value
+        else:
+            self.bear.add_signal(signal)
 
 
 class Speaker(SchemeComponent):
