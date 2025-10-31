@@ -1,13 +1,17 @@
+from tkinter.ttk import Widget
 from typing import Any, Dict
 import tkinter as tk
+import tkinter.ttk as ttk
 from state_machine_visualizer.visualizers.base import BaseVisualizer
 from state_machine_visualizer.simulator import (
     StateMachineResult,
     CyberBear,
+    CyberBearSignal,
     StateMachine,
     run_state_machine,
     EventLoop
 )
+from copy import deepcopy
 
 
 class CyberBearVisualizer(BaseVisualizer):
@@ -21,7 +25,14 @@ class CyberBearVisualizer(BaseVisualizer):
         self.matrix_pixels = []  # Хранит канвасы для пикселей матрицы
         self.left_eye = None  # Канвас для левого глаза
         self.right_eye = None  # Канвас для правого глаза
+        self.signals = []  # Хранит список сигналов
         self.bear = CyberBear()
+        self.signal_rows = []  # Хранит строки с сигналами в настройках
+        # Словарь для преобразования отображаемых имен в реальные
+        self.signal_types = {
+            "Уши-байты": "ears",
+            "Нос-байты": "ir"
+        }
         print("Initializing CyberBearVisualizer")
         super().__init__(parent, state_machine_data)
         # Устанавливаем callback после создания виджетов
@@ -72,10 +83,18 @@ class CyberBearVisualizer(BaseVisualizer):
             row_pixels = []
             for col in range(cols):
                 pixel = tk.Canvas(
-                    matrix_frame, width=self.pixel_size, height=self.pixel_size)
+                    matrix_frame,
+                    width=self.pixel_size,
+                    height=self.pixel_size
+                )
                 pixel.grid(row=row, column=col, padx=1, pady=1)
-                pixel.create_rectangle(2, 2, self.pixel_size-2, self.pixel_size-2,
-                                       fill='black', tags='led')
+                pixel.create_rectangle(
+                    2, 2,
+                    self.pixel_size-2,
+                    self.pixel_size-2,
+                    fill='black',
+                    tags='led'
+                )
                 row_pixels.append(pixel)
             self.matrix_pixels.append(row_pixels)
 
@@ -129,13 +148,180 @@ class CyberBearVisualizer(BaseVisualizer):
 
     def get_settings(self):
         """Возвращает настройки визуализатора."""
-        return {}
+        settings = {
+            'signals': [
+                {
+                    'type': signal.type,
+                    'value': signal.value
+                }
+                for signal in self.signals
+            ]
+        }
+        print("get_settings -> returning signals:", settings['signals'])
+        return settings
+
+    def apply_settings(self, settings: Dict[str, Any]):
+        """Применяет настройки."""
+        signals = settings.get('signals', [])
+        if signals:
+            self.signals = [
+                CyberBearSignal(
+                    type=signal['type'],
+                    value=signal['value']
+                ) for signal in signals
+            ]
+            print("apply_settings -> created signals:",
+                  [(s.type, s.value) for s in self.signals])
+
+    def get_settings_values(
+        self,
+        widgets_dict: Dict[str, Widget]
+    ) -> Dict[str, Any]:
+        """Получает значения из виджетов настроек."""
+        signals = []
+        for i, row in enumerate(self.signal_rows):
+            if not row['frame'].winfo_exists():
+                continue
+
+            try:
+                display_type = row['type'].get()
+                # Преобразуем в реальный тип
+                signal_type = self.signal_types[display_type]
+                value = int(row['value'].get())
+                print(f"get_settings_values -> row {i}:", signal_type, value)
+                if 0 <= value <= 255:
+                    signals.append({
+                        'type': signal_type,
+                        'value': value
+                    })
+            except (ValueError, tk.TclError) as e:
+                print(f"get_settings_values -> error in row {i}:", str(e))
+                continue
+
+        print("get_settings_values -> collected signals:", signals)
+        return {'signals': signals}
+
+    def draw_settings(self, parent_frame) -> Dict[str, Widget]:
+        """Отрисовывает настройки визуализатора."""
+        widgets = {}
+        self.signal_rows = []  # Очищаем список сигналов перед отрисовкой
+
+        # Фрейм для списка сигналов
+        signals_frame = ttk.LabelFrame(parent_frame, text="Сигналы")
+        signals_frame.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky='ew',
+            padx=5,
+            pady=5
+        )
+
+        def add_signal_row():
+            """Добавляет новую строку с сигналом"""
+            row_frame = ttk.Frame(signals_frame)
+            row_frame.pack(fill='x', padx=5, pady=2)
+
+            # Словарь для преобразования отображаемых имен в реальные
+            signal_types = {
+                "Уши-байты": "ears",
+                "Нос-байты": "ir"
+            }
+
+            # Выпадающий список для типа сигнала
+            signal_type = ttk.Combobox(
+                row_frame,
+                values=list(signal_types.keys()),
+                state="readonly",
+                width=15
+            )
+            signal_type.set("Уши-байты")
+            signal_type.pack(side='left', padx=5)
+
+            # Сохраняем и тип сигнала и словарь для преобразования
+            self.signal_types = signal_types
+            widgets[f'type_{len(self.signal_rows)}'] = signal_type
+
+            # Поле для значения
+            value = ttk.Spinbox(
+                row_frame,
+                from_=0,
+                to=255,
+                width=8
+            )
+            value.set(0)
+            value.pack(side='left', padx=5)
+            widgets[f'value_{len(self.signal_rows)}'] = value
+
+            # Кнопка удаления
+            delete_btn = ttk.Button(
+                row_frame,
+                text="✕",
+                width=3,
+                command=lambda: delete_signal_row(row_frame)
+            )
+            delete_btn.pack(side='left', padx=5)
+
+            self.signal_rows.append({
+                'frame': row_frame,
+                'type': signal_type,
+                'value': value
+            })
+
+        def delete_signal_row(row_frame):
+            """Удаляет строку с сигналом и очищает связанные виджеты"""
+            # Находим индекс удаляемого ряда
+            for i, row in enumerate(self.signal_rows):
+                if row['frame'] == row_frame:
+                    # Удаляем записи из widgets_dict
+                    widgets.pop(f'type_{i}', None)
+                    widgets.pop(f'value_{i}', None)
+                    break
+
+            # Удаляем фрейм
+            row_frame.destroy()
+            # Обновляем список рядов
+            self.signal_rows = [
+                row for row in self.signal_rows
+                if row['frame'] != row_frame
+            ]
+
+        # Кнопка добавления сигнала
+        add_btn = ttk.Button(
+            signals_frame,
+            text="+ Добавить сигнал",
+            command=add_signal_row
+        )
+        add_btn.pack(pady=5)
+
+        # Загружаем существующие сигналы
+        existing_signals = self.get_settings().get('signals', [])
+        for signal in existing_signals:
+            add_signal_row()  # Создаем новую строку
+            row = self.signal_rows[-1]  # Получаем последнюю добавленную строку
+            # Находим отображаемое имя по реальному типу
+            display_type = next(
+                name for name, type_ in self.signal_types.items()
+                if type_ == signal['type']
+            )
+            row['type'].set(display_type)  # Устанавливаем тип
+            row['value'].set(str(signal['value']))  # Устанавливаем значение
+
+        return widgets
 
     def _start_simulation(self):
         """Запускает симуляцию машины состояний."""
         try:
+
+            # Создаем новый экземпляр CyberBear
             self.bear = CyberBear()
+
+            # Устанавливаем сигналы в bear
+            self.bear.signals = deepcopy(self.signals)
+
+            # Устанавливаем callback
             self.bear.on_state_changed = self.update_visualization
+
             if not self.state_machine_data:
                 raise ValueError("Данные машины состояний не загружены")
 
