@@ -44,15 +44,29 @@ class CyberBearVisualizer(BaseVisualizer):
         """Создает начальное отображение КиберМишки."""
         # Создаем основной контейнер
         self.widget = tk.Frame(self.parent)
-        self.widget.pack(padx=10, pady=10)
+        self.widget.pack(padx=10, pady=10, expand=True)
 
-        # Создаем заголовок
-        title = tk.Label(self.widget, text="КиберМишка",
-                         font=("Arial", 16, "bold"))
-        title.pack(pady=5)
+        # Создаем центрирующий контейнер
+        center_frame = tk.Frame(self.widget)
+        center_frame.pack(expand=True)
+
+        # Создаем контейнеры для двух колонок
+        main_column = tk.Frame(center_frame)
+        main_column.pack(side=tk.LEFT, padx=10)
+
+        control_column = tk.Frame(center_frame)
+        control_column.pack(side=tk.LEFT, padx=10, fill=tk.Y)
+
+        # Создаем заголовок в основной колонке
+        title = tk.Label(
+            main_column,
+            text="КиберМишка",
+            font=("Arial", 16, "bold")
+        )
+        title.pack(pady=5, anchor=tk.CENTER)
 
         # Контейнер для глаз
-        eyes_frame = tk.Frame(self.widget)
+        eyes_frame = tk.Frame(main_column)
         eyes_frame.pack(pady=10)
 
         # Создаем глаза (круглые RGB-светодиоды)
@@ -67,47 +81,76 @@ class CyberBearVisualizer(BaseVisualizer):
         self.right_eye.create_oval(
             2, 2, eye_size-2, eye_size-2, fill='black', tags='led')
 
-        # Создаем фрейм для информации о байтах
-        bytes_info_frame = tk.Frame(self.widget)
-        bytes_info_frame.pack(pady=5)
+        # Создаем матрицу светодиодов в основной колонке
+        matrix_frame = tk.Frame(main_column)
+        matrix_frame.pack(pady=10)
 
-        # Метки для байтов
+        # Устанавливаем фиксированную ширину для контрольной колонки
+        CONTROL_WIDTH = 200  # Ширина в пикселях
+        MIN_HEIGHT = 100  # Минимальная высота в пикселях
+
+        # В контрольной колонке создаем фрейм для информации о байтах
+        bytes_info_frame = ttk.LabelFrame(
+            control_column,
+            text="Информация о байтах",
+            width=CONTROL_WIDTH
+        )
+        bytes_info_frame.pack(pady=5, anchor=tk.CENTER,
+                              expand=True, fill=tk.BOTH)
+
+        # Метки для байтов с фиксированной высотой
         self.prev_byte_label = tk.Label(
             bytes_info_frame,
-            text="Предыдущий байт: -"
+            text="Предыдущий байт: -",
+            anchor=tk.CENTER,
+            justify=tk.CENTER,
+            width=25,  # Ширина в символах
+            height=2  # Высота в строках
         )
-        self.prev_byte_label.pack()
+        self.prev_byte_label.pack(padx=5, pady=2)
 
         self.current_byte_label = tk.Label(
             bytes_info_frame,
-            text="Текущий байт: -"
+            text="Текущий байт: -",
+            anchor=tk.CENTER,
+            justify=tk.CENTER,
+            width=25,  # Ширина в символах
+            height=2  # Высота в строках
         )
-        self.current_byte_label.pack()
+        self.current_byte_label.pack(padx=5, pady=2)
 
-        # Кнопки управления
-        buttons_frame = tk.Frame(self.widget)
-        buttons_frame.pack(pady=5)
+        # Кнопки управления в контрольной колонке
+        buttons_frame = ttk.LabelFrame(
+            control_column,
+            text="Управление",
+            width=CONTROL_WIDTH
+        )
+        buttons_frame.pack(pady=5, anchor=tk.CENTER, expand=True, fill=tk.BOTH)
 
         # Кнопка отправки байта
-        self.send_byte_button = tk.Button(
+        # Создаем кнопки с фиксированной высотой
+        button_style = ttk.Style()
+        button_style.configure('Fixed.TButton', padding=5)  # Добавляем отступы
+
+        self.send_byte_button = ttk.Button(
             buttons_frame,
             text="▶ Отправить байт",
             command=self.send_next_byte,
-            state='disabled'  # Изначально кнопка заблокирована
+            state='disabled',  # Изначально кнопка заблокирована
+            width=20,  # Ширина в символах
+            style='Fixed.TButton'
         )
-        self.send_byte_button.pack(side=tk.LEFT, padx=5)
+        self.send_byte_button.pack(padx=5, pady=5, ipady=3)
 
         # Кнопка остановки
-        stop_button = tk.Button(
+        stop_button = ttk.Button(
             buttons_frame,
             text="⏹️ Остановить",
-            command=self.stop_simulation
+            command=self.stop_simulation,
+            width=20,  # Ширина в символах
+            style='Fixed.TButton'
         )
-        stop_button.pack(side=tk.LEFT, padx=5)
-
-        # Создаем матрицу светодиодов
-        matrix_frame = tk.Frame(self.widget)
-        matrix_frame.pack(pady=10)
+        stop_button.pack(padx=5, pady=5, ipady=3)
 
         # Создаем сетку светодиодов
         rows, cols = self.matrix_size
