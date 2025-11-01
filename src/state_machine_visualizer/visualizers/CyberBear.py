@@ -87,7 +87,6 @@ class CyberBearVisualizer(BaseVisualizer):
 
         # Устанавливаем фиксированную ширину для контрольной колонки
         CONTROL_WIDTH = 250  # Ширина в пикселях
-        MIN_HEIGHT = 100  # Минимальная высота в пикселях
 
         # В контрольной колонке создаем фрейм для информации о байтах
         bytes_info_frame = ttk.LabelFrame(
@@ -304,13 +303,16 @@ class CyberBearVisualizer(BaseVisualizer):
 
         # Создаем canvas и scrollbar
         canvas = tk.Canvas(signals_frame)
-        scrollbar = ttk.Scrollbar(signals_frame, orient="vertical", 
-                                command=canvas.yview)
+        scrollbar = ttk.Scrollbar(
+            signals_frame,
+            orient="vertical",
+            command=canvas.yview
+        )
         scrollable_frame = ttk.Frame(canvas)
 
         # Настраиваем scrollbar
         canvas.configure(yscrollcommand=scrollbar.set)
-        
+
         # Pack для canvas и scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -332,7 +334,7 @@ class CyberBearVisualizer(BaseVisualizer):
         # Привязываем прокрутку колесиком мыши
         def on_mousewheel(event):
             canvas.yview_scroll(-1 * (event.delta // 120), "units")
-        
+
         canvas.bind_all("<MouseWheel>", on_mousewheel)
 
         # Заменяем signals_frame на scrollable_frame для добавления новых строк
@@ -342,7 +344,7 @@ class CyberBearVisualizer(BaseVisualizer):
             """Добавляет новую строку с сигналом"""
             row_frame = ttk.Frame(signals_frame)
             row_frame.pack(fill='x', padx=5, pady=2)
-            
+
             # Обновляем область прокрутки после добавления новой строки
             update_scroll_region()
 

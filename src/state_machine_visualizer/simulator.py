@@ -13,6 +13,7 @@ from typing import (
     Any,
     Callable
 )
+import re
 from collections import defaultdict
 import random
 from collections import deque
@@ -1049,7 +1050,7 @@ class EarsBytes(SchemeComponent):
             return
         if signal.type == 'ears':
             EventLoop.add_event(f'{self.name}.isByteReceived')
-            self.value = signal.value
+            self.value = int(signal.value)
         else:
             self.bear.add_signal(signal)
 
@@ -1082,7 +1083,8 @@ class PhotoDiodeBytes(SchemeComponent):
         if signal.type == 'ir':
             print(f'{self.name}.isByteReceived!')
             EventLoop.add_event(f'{self.name}.isByteReceived')
-            self.value = signal.value
+            self.value = int(signal.value)
+            print(self.value)
         else:
             self.bear.add_signal(signal)
 
@@ -1308,6 +1310,7 @@ class Matrix(SchemeComponent):
         Args:
             pattern: Одномерный список из 35 элементов (5 строк x 7 столбцов)
         """
+        print('set pattern!!!')
         if self.bear is None:
             return
         self.bear.set_pattern(pattern)
@@ -2795,7 +2798,8 @@ class StateMachine:
 
     def __parse_args(self, args_str: str) -> list:
         """
-        Парсит строку аргументов, учитывая сложные структуры в фигурных скобках.
+        Парсит строку аргументов, учитывая\
+            сложные структуры в фигурных скобках.
 
         Примеры:
         "1, 2, 3" -> [1, 2, 3]
@@ -3301,6 +3305,7 @@ def run_state_machine(
     Запускает машину состояний на основе CGML XML и списка сигналов.
     Возвращает StateMachineResult: был ли выход по таймауту, список сигналов, компоненты.
     """
+    default_signals = ['noconditionTransition', 'entry', 'exit']
     EventLoop.clear()
     qhsm = sm.qhsm
     qhsm.current_(qhsm, 'entry')
@@ -3310,14 +3315,19 @@ def run_state_machine(
 
     timeout = False
     start_time = time.time()
+
     while True:
         # Execute loop_actions for each component
         for component in sm.components.values():
             if hasattr(component.obj, 'loop_actions'):
-
                 component.obj.loop_actions()
 
         event = EventLoop.get_event()
+
+        while event in default_signals:
+            SIMPLE_DISPATCH(qhsm, event)
+            event = EventLoop.get_event()
+            continue
         if event is None:
             if isInfinite:
                 continue
@@ -3333,7 +3343,6 @@ def run_state_machine(
         EventLoop.called_events,
         sm.components
     )
-
 
 # ============================================================================
 # ORBITA.PY
