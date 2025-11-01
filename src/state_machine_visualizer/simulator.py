@@ -22,7 +22,6 @@ from functools import partial
 from abc import ABC
 import time
 import sys
-import re
 
 
 # ============================================================================
@@ -3321,9 +3320,7 @@ def run_state_machine(
         for component in sm.components.values():
             if hasattr(component.obj, 'loop_actions'):
                 component.obj.loop_actions()
-
         event = EventLoop.get_event()
-
         while event in default_signals:
             SIMPLE_DISPATCH(qhsm, event)
             event = EventLoop.get_event()
@@ -3334,7 +3331,6 @@ def run_state_machine(
             break
         if event == 'break':
             break
-
         SIMPLE_DISPATCH(qhsm, event)
 
     return StateMachineResult(
@@ -3447,43 +3443,103 @@ def extract_state_machine(code: str):
     return None
 
 
+def parse_test_string(test_str: str) -> tuple[list, list, Union[tuple, None]]:
+    """Parse a test string in format 'firstarray;secondarray;condition' into components.
+
+    Args:
+        test_str: String in format "[[1,2],[3,4]];[[5,6],[7,8]];(1,2)" or similar
+
+    Returns:
+        Tuple of (first array, second array, condition string)
+        Arrays are nested lists, condition is string representation of position or None
+    """
+    try:
+        # Split by semicolon
+        parts = test_str.split(';')
+        if len(parts) != 3:
+            raise ValueError(
+                "Test string must have exactly 3 parts separated by semicolons")
+
+        # Parse the arrays using ast.literal_eval for safety
+        first_array = ast.literal_eval(parts[0])
+        second_array = ast.literal_eval(parts[1])
+
+        # Parse condition - can be None or a position tuple
+        condition = None if parts[2].lower(
+        ) == 'none' else ast.literal_eval(parts[2])
+
+        return first_array, second_array, condition
+
+    except Exception as e:
+        raise ValueError(f"Failed to parse test string: {e}")
+
+
+def create_test_string(first: list, second: list, condition: Optional[tuple]) -> str:
+    """Create a test string from arrays and condition.
+
+    Args:
+        first: First nested list array
+        second: Second nested list array
+        condition: Optional position tuple or None
+
+    Returns:
+        Formatted string in 'firstarray;secondarray;condition' format
+    """
+    try:
+        # Convert arrays to string representation
+        first_str = str(first)
+        second_str = str(second)
+
+        # Convert condition to string
+        condition_str = 'None' if condition is None else str(condition)
+
+        # Join with semicolons
+        return f"{first_str};{second_str};{condition_str}"
+
+    except Exception as e:
+        raise ValueError(f"Failed to create test string: {e}")
+
+
 # Основная функция запуска пользовательских программ, проверки и начисления очков, вызываемая для каждого теста
 # Ключевые параметры
 # input - данные для проверки решений (входящие)
 # output - данные для проверки решений (исходящие)
 # user_programs - массив программ участника в составе решения
 def run(run_index, iteration_index, input, output, user_programs):
-    SCORE = 1
-    current_score = 0
-    xml = extract_state_machine(user_programs[0])
-    if xml is None:
-        return {'score': current_score, 'message': "Отсутствует переменная state_machine с CGML!", 'log': f'{user_programs}'}
-    parser = CGMLParser()
-    cgml_state_machines = parser.parse_cgml(xml)
-    assert cgml_state_machines.state_machines, "Отсутствуют машины состояний!"
-    cgml_sm = list(cgml_state_machines.state_machines.values())[0]
-    error = 'Машина состояний выполнилась успешно!'
-    tests = []
-    log = ''
-    for i, test in enumerate(tests):
-        log += f'Test {i}: '
-        gardener = Gardener(5, 7, True)
-        gardener.orientation = gardener.NORTH
-        gardener.set_field(
-            test[0]
-        )
-        check_result, run_result = auto_test_gardener(
-            cgml_sm,
-            gardener,
-            [], test[1], [], test[2]
-        )
-        check_error, status = check_result
-        if status is True:
-            current_score += SCORE
-            error = 'Машина состояний выполнилась успешно!'
-        else:
-            error = check_error
-        log += error + '\n'
-        log += 'Signals: ' + ', '.join(run_result.called_signals) + '\n'
-
+    try:
+        SCORE = 1
+        current_score = 0
+        xml = extract_state_machine(user_programs[0])
+        if xml is None:
+            return {'score': current_score, 'message': "Отсутствует переменная state_machine с CGML!", 'log': f'{user_programs}'}
+        parser = CGMLParser()
+        cgml_state_machines = parser.parse_cgml(xml)
+        assert cgml_state_machines.state_machines, "Отсутствуют машины состояний!"
+        cgml_sm = list(cgml_state_machines.state_machines.values())[0]
+        error = 'Машина состояний выполнилась успешно!'
+        tests = []
+        log = ''
+        for i, test in enumerate(tests):
+            log += f'Test {i}: '
+            gardener = Gardener(5, 7, True)
+            gardener.orientation = gardener.NORTH
+            gardener.set_field(
+                test[0]
+            )
+            check_result, run_result = auto_test_gardener(
+                cgml_sm,
+                gardener,
+                [], test[1], [], test[2]
+            )
+            check_error, status = check_result
+            if status is True:
+                current_score += SCORE
+                error = 'Машина состояний выполнилась успешно!'
+            else:
+                error = check_error
+            log += error + '\n'
+            log += 'Signals: ' + ', '.join(run_result.called_signals) + '\n'
+    except Exception as e:
+        import inspect
+        error = inspect.trace()
     return {'score': current_score, 'message': error, 'log': log}
