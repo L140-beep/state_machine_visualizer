@@ -771,7 +771,7 @@ class CyberBear:
         [0, 0, 100, 0, 0],
         [0, 0, 0, 0, 0],
     ]
-    smile = [
+    sad = [
         [0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0],
         [0, 100, 0, 100, 0],
@@ -821,15 +821,37 @@ class CyberBear:
         return True
 
     def check_pattern(self):
+        print('check pattern!')
         if self.is_matrix_equal(self.heart):
             print('heart!')
             EventLoop.add_event('heart', True)
-        elif self.is_matrix_equal(self.smile):
-            EventLoop.add_event('smile', True)
-            print('smile!')
+        elif self.is_matrix_equal(self.sad):
+            EventLoop.add_event('sad', True)
+            print('sads!')
         elif self.is_matrix_equal(self.empty):
             EventLoop.add_event('empty', True)
             print('empty!')
+        else:
+            EventLoop.add_event('unknown pattern', True)
+            print('unknown pattern!')
+
+    def check_color(self):
+        check_colors = [
+            (Eyes.colors.get('&ColorGreen'), 'green'),
+            (Eyes.colors.get('&ColorWhite'), 'white'),
+            (Eyes.colors.get('&ColorRed'), 'red'),
+        ]
+        for color, signal in check_colors:
+            left = False
+            right = False
+            if self.left_eye == color:
+                left = True
+            if self.right_eye == color:
+                right = True
+            if left and right:
+                EventLoop.add_event(signal, True)
+                print(f'detected {signal}!')
+                return
 
     @property
     def signals(self):
@@ -852,12 +874,14 @@ class CyberBear:
     def set_left_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет левого глаза."""
         self.left_eye = [r, g, b, k]
+        self.check_color()
         if self.on_state_changed:
             self.on_state_changed()
 
     def set_right_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет правого глаза."""
         self.right_eye = [r, g, b, k]
+        self.check_color()
         if self.on_state_changed:
             self.on_state_changed()
 
@@ -3317,14 +3341,15 @@ def run_state_machine(
 
     while True:
         # Execute loop_actions for each component
-        for component in sm.components.values():
-            if hasattr(component.obj, 'loop_actions'):
-                component.obj.loop_actions()
         event = EventLoop.get_event()
         while event in default_signals:
             SIMPLE_DISPATCH(qhsm, event)
             event = EventLoop.get_event()
             continue
+        for component in sm.components.values():
+            if hasattr(component.obj, 'loop_actions'):
+                component.obj.loop_actions()
+        event = EventLoop.get_event()
         if event is None:
             if isInfinite:
                 time.sleep(0.1)
