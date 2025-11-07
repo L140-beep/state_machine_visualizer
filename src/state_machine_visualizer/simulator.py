@@ -762,6 +762,42 @@ class CyberBearSignal:
 
 class CyberBear:
     """Класс для хранения состояния КиберМишки."""
+    smile = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 100, 0, 100, 0],
+        [0, 0, 0, 0, 0],
+        [100, 0, 0, 0, 100],
+        [0, 100, 100, 100, 0],
+        [0, 0, 0, 0, 0]
+    ]
+    triangle = [
+        [0, 0, 0, 0, 0,],
+        [0, 0, 100, 0, 0,],
+        [0, 100, 0, 100, 0,],
+        [100, 100, 100, 100, 100,],
+        [0, 0, 0, 0, 0,],
+        [0, 0, 0, 0, 0,],
+        [0, 0, 0, 0, 0],
+    ]
+    question = [
+        [0, 0, 100, 0, 0,],
+        [0, 100, 0, 100, 0,],
+        [0, 0, 0, 100, 0,],
+        [0, 0, 100, 0, 0,],
+        [0, 0, 0, 0, 0,],
+        [0, 0, 100, 0, 0,],
+        [0, 0, 0, 0, 0],
+    ]
+    square = [
+        [0, 0, 0, 0, 0,],
+        [100, 100, 100, 100, 100,],
+        [100, 0, 0, 0, 100,],
+        [100, 0, 0, 0, 100,],
+        [100, 0, 0, 0, 100,],
+        [100, 100, 100, 100, 100,],
+        [0, 0, 0, 0, 0],
+    ]
     heart = [
         [0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0],
@@ -790,6 +826,15 @@ class CyberBear:
         [0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0],
     ]
+    fill = [
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+        [100, 100, 100, 100, 100],
+    ]
 
     def __init__(self):
         # Цвет левого глаза (RGBK)
@@ -806,7 +851,10 @@ class CyberBear:
         self.on_state_changed: Optional[Callable[[], None]] = None
         self.__signals: Optional[List[CyberBearSignal]] = []
 
+        self.is_left_setted = False
+        self.is_right_setted = False
     # Сравнить текущую матрицу с полученной
+
     def is_matrix_equal(self, matrix: list):
         if (
             len(matrix) != len(self.matrix) or
@@ -821,25 +869,43 @@ class CyberBear:
         return True
 
     def check_pattern(self):
-        print('check pattern!')
         if self.is_matrix_equal(self.heart):
             print('heart!')
             EventLoop.add_event('heart', True)
         elif self.is_matrix_equal(self.sad):
             EventLoop.add_event('sad', True)
-            print('sads!')
+            print('sad!')
         elif self.is_matrix_equal(self.empty):
             EventLoop.add_event('empty', True)
             print('empty!')
+        elif self.is_matrix_equal(self.smile):
+            EventLoop.add_event('smile', True)
+            print('smile!')
+        elif self.is_matrix_equal(self.question):
+            EventLoop.add_event('question', True)
+            print('question!')
+        elif self.is_matrix_equal(self.fill):
+            EventLoop.add_event('fill', True)
+            print('fill!')
+        elif self.is_matrix_equal(self.triangle):
+            EventLoop.add_event('triangle', True)
+            print('triangle!')
+        elif self.is_matrix_equal(self.square):
+            EventLoop.add_event('square', True)
+            print('square!')
         else:
             EventLoop.add_event('unknown pattern', True)
             print('unknown pattern!')
 
     def check_color(self):
         check_colors = [
-            (Eyes.colors.get('&ColorGreen'), 'green'),
-            (Eyes.colors.get('&ColorWhite'), 'white'),
-            (Eyes.colors.get('&ColorRed'), 'red'),
+            (list(Eyes.colors['&ColorBlue']), 'blue'),
+            (list(Eyes.colors['&ColorYellow']), 'yellow'),
+            (list(Eyes.colors['&ColorBlack']), 'off'),
+            ([0, 0, 0, 0], 'off'),
+            (list(Eyes.colors['&ColorGreen']), 'green'),
+            (list(Eyes.colors['&ColorWhite']), 'white'),
+            (list(Eyes.colors['&ColorRed']), 'red'),
         ]
         for color, signal in check_colors:
             left = False
@@ -851,7 +917,10 @@ class CyberBear:
             if left and right:
                 EventLoop.add_event(signal, True)
                 print(f'detected {signal}!')
-                return
+                break
+
+        self.is_left_setted = False
+        self.is_right_setted = False
 
     @property
     def signals(self):
@@ -874,14 +943,18 @@ class CyberBear:
     def set_left_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет левого глаза."""
         self.left_eye = [r, g, b, k]
-        self.check_color()
+        self.is_left_setted = True
+        if self.is_right_setted and self.is_left_setted:
+            self.check_color()
         if self.on_state_changed:
             self.on_state_changed()
 
     def set_right_eye(self, r: int, g: int, b: int, k: int):
         """Установить цвет правого глаза."""
         self.right_eye = [r, g, b, k]
-        self.check_color()
+        self.is_right_setted = True
+        if self.is_right_setted and self.is_left_setted:
+            self.check_color()
         if self.on_state_changed:
             self.on_state_changed()
 
@@ -889,6 +962,8 @@ class CyberBear:
         """Установить значение пикселя матрицы."""
         if 0 <= row < 7 and 0 <= col < 5:
             self.matrix[row][col] = value
+        if self.on_state_changed:
+            self.on_state_changed()
 
     def set_pattern(self, pattern: list):
         """Установить шаблон на матрицу из одномерного списка.
@@ -1322,7 +1397,7 @@ class Matrix(SchemeComponent):
                 "CyberBear instance is required for Matrix component!")
 
     def setPixel(self, row: int, col: int, brightness: int):
-        if 0 <= row < 5 and 0 <= col < 7:
+        if 0 <= row < 7 and 0 <= col < 5:
             self.bear.set_matrix_pixel(row, col, brightness)
         else:
             raise Exception('Matrix - out of bounds!')
@@ -1340,8 +1415,8 @@ class Matrix(SchemeComponent):
         print(f'Установлен паттерн на матрице {pattern}')
 
     def changePatternBright(self, mode: str, brightness: int):
-        for row in range(5):
-            for col in range(7):
+        for row in range(7):
+            for col in range(5):
                 current = self.bear.get_matrix_pixel(row, col)
                 if mode == "ALL_LEDS" or \
                    (mode == "ON_LEDS" and current > 0) or \
@@ -3346,10 +3421,12 @@ def run_state_machine(
             SIMPLE_DISPATCH(qhsm, event)
             event = EventLoop.get_event()
             continue
-        for component in sm.components.values():
-            if hasattr(component.obj, 'loop_actions'):
-                component.obj.loop_actions()
-        event = EventLoop.get_event()
+        if event is None:
+            for component in sm.components.values():
+                if hasattr(component.obj, 'loop_actions'):
+                    if component.obj.loop_actions():
+                        break
+            event = EventLoop.get_event()
         if event is None:
             if isInfinite:
                 time.sleep(0.1)

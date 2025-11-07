@@ -8,11 +8,12 @@ from state_machine_visualizer.settings_window import SettingsWindow
 from state_machine_visualizer.simulator import CGMLParser
 from state_machine_visualizer.visualizers import get_visualizer_class
 
+version = '0.3'
 
 class MainApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Визуализатор машин состояний")
+        self.title(f"Визуализатор машин состояний (v{version})")
         self.geometry("1000x600")
         self.configure(bg=COLORS['main_bg'])
 
