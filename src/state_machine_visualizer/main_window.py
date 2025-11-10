@@ -8,7 +8,7 @@ from state_machine_visualizer.settings_window import SettingsWindow
 from state_machine_visualizer.simulator import CGMLParser
 from state_machine_visualizer.visualizers import get_visualizer_class
 
-version = '0.3'
+version = '0.4'
 
 class MainApp(tk.Tk):
     def __init__(self):
