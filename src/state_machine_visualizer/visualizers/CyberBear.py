@@ -40,6 +40,13 @@ class CyberBearVisualizer(BaseVisualizer):
         # Устанавливаем callback после создания виджетов
         self.bear.on_state_changed = self.update_visualization
 
+    def update_state_machine_data(self, new_data: Dict[str, Any]):
+        self.current_signal_index = 0  # Индекс текущего сигнала
+        self.prev_signal = None  # Предыдущий отправленный сигнал
+        self.bear = CyberBear()
+        self.state_machine_data = new_data
+        self.update_visualization()
+
     def create_initial_view(self):
         """Создает начальное отображение КиберМишки."""
         # Создаем основной контейнер

@@ -1773,6 +1773,9 @@ class Counter(SchemeComponent):
     def clear(self):
         self.value = 0
 
+    def reset(self):
+        self.value = 0
+
 # Компонент Свое событие
 # Событие Вызвано
 # Действие Вызвать
